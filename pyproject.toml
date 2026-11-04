@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plbct-osint"
+version = "0.1.0"
+description = "Privacy-conscious CLI checks for authorized OSINT inputs"
+requires-python = ">=3.11"
+dependencies = ["dnspython>=2.6,<3", "phonenumbers>=8.13,<10"]
+
+[project.scripts]
+plbct = "larp_osint:main"
+flmp = "fivem_remote_check:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["larp_osint", "fivem_config_audit", "fivem_remote_check", "flmp_menu_art"]
