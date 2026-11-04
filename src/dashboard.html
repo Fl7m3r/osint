@@ -7,137 +7,122 @@
   <title>FLMP // FiveM Security Console</title>
   <style>
     :root{
-      --bg:#040809;--panel:#0a1518;--line:#15353b;--line2:#1d4b52;
+      --bg:#040809;--bg2:#06100f;--panel:#0a1518;--card:#0b171a;--line:#143339;--line2:#1d4b52;
       --mint:#5effc6;--cyan:#39d6ff;--amber:#ffcf6b;--red:#ff5e86;--violet:#b98cff;
-      --muted:#7fa0a2;--text:#d6f3ec;--glow:#45ffd2;
+      --muted:#7fa0a2;--muted2:#5b7a7c;--text:#d6f3ec;--glow:#45ffd2;
     }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:14px/1.55 "Cascadia Code","JetBrains Mono",Consolas,monospace;overflow-x:hidden}
-    /* animated perspective grid floor */
-    body:before{content:"";position:fixed;inset:0;z-index:-2;background:
-      radial-gradient(ellipse at 50% 28%,#0e3b41 0,#071417 46%,#030708 100%)}
-    body:after{content:"";position:fixed;inset:-40% 0 0;z-index:-1;pointer-events:none;opacity:.22;
-      background-image:linear-gradient(#47f5d012 1px,transparent 1px),linear-gradient(90deg,#47f5d012 1px,transparent 1px);
-      background-size:46px 46px;transform:perspective(560px) rotateX(63deg) scale(1.9);transform-origin:center 60%;
-      mask-image:linear-gradient(transparent,#000 24%,#000 78%,transparent);animation:floor 22s linear infinite}
-    @keyframes floor{to{background-position:0 46px,0 0}}
-    /* moving scanline overlay */
-    .crt{position:fixed;inset:0;z-index:50;pointer-events:none;background:linear-gradient(#0000 0,#5effc605 50%,#0000 100%);background-size:100% 6px;opacity:.4;mix-blend-mode:screen}
-    .sweep{position:fixed;left:0;right:0;height:120px;z-index:49;pointer-events:none;background:linear-gradient(#0000,#5effc60f,#0000);animation:sweep 7s linear infinite}
+    a{color:var(--mint);text-decoration:none}
+    ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#1c4349;border-radius:6px}::-webkit-scrollbar-track{background:#060d0f}
+    .app{display:grid;grid-template-columns:238px 1fr;min-height:100vh}
+    /* ---------------- sidebar ---------------- */
+    .side{position:sticky;top:0;align-self:start;height:100vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#07110f,#050a0b);border-right:1px solid var(--line);overflow-y:auto}
+    .side .brand{display:flex;gap:11px;align-items:center;padding:17px 16px;border-bottom:1px solid var(--line)}
+    .side .logo{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--mint);color:var(--mint);font-weight:700;box-shadow:0 0 16px #45ffd244,inset 0 0 10px #45ffd222;animation:flick 5s infinite}
+    @keyframes flick{0%,96%,100%{opacity:1}97%{opacity:.4}98%{opacity:.9}}
+    .side .brand b{font-size:14px;letter-spacing:.14em}.side .brand span{color:var(--mint)}
+    .navsec{padding:14px 12px 4px;color:var(--muted2);font-size:9.5px;letter-spacing:.2em}
+    .nav{display:flex;align-items:center;gap:11px;margin:1px 8px;padding:9px 11px;color:#9fbdbb;cursor:pointer;border:1px solid transparent;border-radius:3px;font-size:12.5px;letter-spacing:.03em;transition:.15s}
+    .nav .ni{width:17px;text-align:center;color:var(--muted);transition:.15s}
+    .nav:hover{background:#0c1c1f;color:var(--text)}
+    .nav:hover .ni{color:var(--mint)}
+    .nav.active{background:linear-gradient(90deg,#0f2a28,#0b1a1c);color:var(--mint);border-color:#1d4b52;box-shadow:inset 2px 0 0 var(--mint)}
+    .nav.active .ni{color:var(--mint)}
+    .nav .tag{margin-left:auto;font-size:8.5px;padding:2px 5px;border:1px solid #244f46;color:var(--mint);letter-spacing:.05em}
+    .side .foot{margin-top:auto;padding:13px 14px;border-top:1px solid var(--line);font-size:10px;color:var(--muted2)}
+    .side .foot .st{display:flex;align-items:center;gap:8px;color:var(--mint)}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 10px var(--mint);animation:pulse 1.7s infinite}
+    @keyframes pulse{50%{opacity:.3}}
+    /* ---------------- main ---------------- */
+    .main{min-width:0;background:radial-gradient(ellipse at 70% -10%,#0c2a2d 0,#050c0d 55%)}
+    .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:13px 22px;border-bottom:1px solid var(--line);background:#050d0ecc;backdrop-filter:blur(7px)}
+    .topbar h1{margin:0;font-size:15px;letter-spacing:.12em;color:var(--text)}
+    .topbar .crumbs{color:var(--muted);font-size:11px;letter-spacing:.1em}
+    .chips{display:flex;gap:9px;flex-wrap:wrap}
+    .chip{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.1em;color:var(--muted);border:1px solid var(--line2);padding:6px 10px}
+    .chip b{color:var(--mint)}
+    .view{display:none;padding:22px;max-width:1180px;margin:0 auto}
+    .view.active{display:block;animation:rise .35s both}
+    @keyframes rise{from{opacity:0;transform:translateY(10px)}}
+    .sweep{position:fixed;left:238px;right:0;height:120px;z-index:5;pointer-events:none;background:linear-gradient(#0000,#5effc60a,#0000);animation:sweep 8s linear infinite}
     @keyframes sweep{0%{top:-120px}100%{top:100%}}
-    .shell{position:relative;max-width:1200px;margin:auto;padding:22px 22px 70px}
-    a{color:var(--mint)}
-    /* ---- top bar ---- */
-    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:6px 0 16px;flex-wrap:wrap}
-    .brand{display:flex;gap:14px;align-items:center}
-    .logo{position:relative;display:grid;place-items:center;width:46px;height:46px;border:1px solid var(--mint);color:var(--mint);font-size:22px;font-weight:700;
-      box-shadow:0 0 22px #45ffd255,inset 0 0 14px #45ffd222;animation:logoflick 4s infinite}
-    @keyframes logoflick{0%,97%,100%{opacity:1}98%{opacity:.4}99%{opacity:.8}}
-    .brand h1{font-size:17px;letter-spacing:.2em;margin:0}
-    .brand small{color:var(--muted);letter-spacing:.05em}
-    .status{display:flex;align-items:center;gap:16px;font-size:11px;letter-spacing:.12em;color:var(--muted)}
-    .status b{color:var(--mint)}
-    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px var(--mint);margin-right:7px;animation:pulse 1.7s infinite}
-    @keyframes pulse{50%{opacity:.3;box-shadow:0 0 2px var(--mint)}}
-    /* ---- hero ---- */
-    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:center;padding:42px 0 18px}
-    .eyebrow{color:var(--cyan);letter-spacing:.26em;font-size:11px}
-    .hero h2{font-size:clamp(28px,4.4vw,50px);line-height:1.04;margin:14px 0;letter-spacing:-.01em}
-    .hero h2 .accent{color:var(--mint);text-shadow:0 0 22px #45ffd266}
-    .type{color:var(--cyan)}
-    .cursor{display:inline-block;width:11px;height:1.05em;background:var(--mint);margin-left:2px;vertical-align:-2px;animation:blink 1s step-end infinite;box-shadow:0 0 10px var(--mint)}
+    /* hero banner on dashboard */
+    .hero{position:relative;overflow:hidden;border:1px solid var(--line);background:linear-gradient(120deg,#0b1c1fee,#081213ee);padding:26px 24px;margin-bottom:18px}
+    .hero:after{content:"";position:absolute;inset:-40% -10% auto auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,#13d7d422,transparent 68%);animation:floaty 7s ease-in-out infinite}
+    @keyframes floaty{50%{transform:translateY(14px)}}
+    .hero .eyebrow{color:var(--cyan);letter-spacing:.24em;font-size:10px}
+    .hero h2{margin:9px 0 6px;font-size:clamp(22px,3vw,32px)}
+    .hero h2 .accent{color:var(--mint);text-shadow:0 0 20px #45ffd255}
+    .hero p{margin:0;color:#9fc0be;max-width:640px;font-size:13px}
+    .hero .type{color:var(--cyan)}.cursor{display:inline-block;width:9px;height:1em;background:var(--mint);vertical-align:-2px;margin-left:2px;animation:blink 1s step-end infinite}
     @keyframes blink{50%{opacity:0}}
-    .hero p{max-width:560px;color:#9fc0be}
-    .hero .cta{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
-    .chip{border:1px solid var(--line2);background:#071417;color:var(--mint);padding:8px 14px;font:inherit;font-size:12px;letter-spacing:.12em;cursor:pointer;text-decoration:none;
-      clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:.2s}
-    .chip:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 18px #39d6ff33}
-    .chip.solid{background:linear-gradient(105deg,#5effc6,#39d6ff);color:#001512;border-color:var(--mint);font-weight:700}
-    /* orb */
-    .orb-wrap{height:250px;display:grid;place-items:center;perspective:720px}
-    .orb{width:180px;height:180px;position:relative;transform-style:preserve-3d;animation:float 5.5s ease-in-out infinite}
-    .core{position:absolute;inset:36px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#9effe8,#17bdac 20%,#07565b 52%,#061a20 76%);
-      box-shadow:0 0 28px #5fffd5,0 0 85px #13d7d455,inset -18px -14px 26px #020a0d;transform:translateZ(32px)}
-    .ring{position:absolute;inset:14px;border:1px solid #59ffdaaa;border-radius:50%;box-shadow:0 0 18px #42ffd955;transform:rotateX(70deg) rotateY(16deg)}
-    .ring.r2{inset:0;transform:rotateY(72deg) rotateX(18deg);border-color:#49dfff99;animation:spin 13s linear infinite}
-    .ring.r3{inset:26px;transform:rotateX(76deg) rotateZ(60deg);border-style:dashed;animation:spin 19s linear infinite reverse}
-    .node{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);top:14px;left:84px;transform:translateZ(30px)}
-    @keyframes spin{to{rotate:360deg}}@keyframes float{50%{transform:translateY(-9px) rotateY(8deg)}}
-    /* ---- module tiles ---- */
-    .section-label{display:flex;align-items:center;gap:12px;color:var(--cyan);letter-spacing:.2em;font-size:11px;margin:34px 0 14px}
+    /* stat cards */
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+    .stat{border:1px solid var(--line);background:var(--card);padding:15px 16px;position:relative;overflow:hidden}
+    .stat .lbl{color:var(--muted);font-size:10px;letter-spacing:.14em}
+    .stat .val{font-size:26px;color:var(--mint);margin-top:8px;letter-spacing:.02em}
+    .stat .sub{color:var(--muted2);font-size:10.5px;margin-top:4px}
+    .stat .spark{position:absolute;right:12px;top:14px;color:var(--line2)}
+    /* tools grid */
+    .section-label{display:flex;align-items:center;gap:12px;color:var(--cyan);letter-spacing:.18em;font-size:11px;margin:4px 0 13px}
     .section-label:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
-    .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-    .tile{position:relative;border:1px solid var(--line);background:linear-gradient(150deg,#0a181cee,#070f12ee);padding:16px;cursor:pointer;overflow:hidden;transition:.22s;animation:rise .5s both}
-    .tile:hover{transform:translateY(-3px);border-color:var(--line2);box-shadow:0 14px 34px #0008,0 0 22px #35ffd51a}
-    .tile:before{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(105deg,transparent,#5effc618,transparent);transition:.45s}
-    .tile:hover:before{left:120%}
-    .tile .ico{font-size:17px;color:var(--mint)}
-    .tile h4{margin:10px 0 5px;font-size:13px;letter-spacing:.06em;color:var(--text)}
-    .tile p{margin:0;color:var(--muted);font-size:11.5px;line-height:1.5}
-    .tile .go{position:absolute;right:14px;top:16px;color:var(--line2);transition:.2s}
-    .tile:hover .go{color:var(--mint);transform:translateX(3px)}
-    @keyframes rise{from{opacity:0;transform:translateY(14px)}}
-    /* ---- panels ---- */
-    .panel{border:1px solid var(--line);background:linear-gradient(145deg,#0a171beF,#070f12e8);box-shadow:0 22px 44px #0007;margin-top:18px;scroll-margin-top:20px}
-    .panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 17px;border-bottom:1px solid var(--line);letter-spacing:.14em;color:var(--cyan);font-size:11px}
+    .tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+    .tool{position:relative;border:1px solid var(--line);background:linear-gradient(150deg,#0b1a1dee,#070f11ee);padding:16px;cursor:pointer;overflow:hidden;transition:.2s;animation:rise .45s both}
+    .tool:hover{transform:translateY(-3px);border-color:var(--line2);box-shadow:0 14px 32px #0008,0 0 20px #35ffd518}
+    .tool:before{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(105deg,transparent,#5effc615,transparent);transition:.5s}
+    .tool:hover:before{left:120%}
+    .tool .ico{font-size:17px;color:var(--mint)}
+    .tool h4{margin:10px 0 5px;font-size:13px;color:var(--text);letter-spacing:.04em}
+    .tool p{margin:0;color:var(--muted);font-size:11.5px;line-height:1.5}
+    .tool .go{position:absolute;right:14px;top:15px;color:var(--line2);transition:.2s}
+    .tool:hover .go{color:var(--mint);transform:translateX(3px)}
+    /* panels / forms */
+    .panel{border:1px solid var(--line);background:linear-gradient(145deg,#0a171beF,#070f12e8);margin-bottom:18px}
+    .panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 17px;border-bottom:1px solid var(--line);letter-spacing:.13em;color:var(--cyan);font-size:11px}
     .panel-head .tag{color:var(--mint)}
     .panel-body{padding:19px}
-    .grid{display:grid;grid-template-columns:1fr .78fr;gap:18px;margin-top:18px}
-    .grid .panel{margin-top:0}
+    .cols{display:grid;grid-template-columns:1fr .72fr;gap:18px}
     .field{display:grid;gap:7px;margin-bottom:15px}
     .field label{color:var(--muted);font-size:11px;letter-spacing:.1em}
     .field input{width:100%;background:#03090b;border:1px solid #1b4147;color:var(--mint);padding:12px 13px;font:inherit;outline:none;transition:.2s}
     .field input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #39d6ff22}
     .field input:disabled{color:var(--muted)}
     .row{display:grid;grid-template-columns:1fr 150px;gap:12px}
-    .consent{display:flex;gap:10px;align-items:flex-start;color:#9cbab8;font-size:12px;margin:12px 0}
-    .consent input{accent-color:#39e9bb;margin-top:3px}
     .opts{display:flex;gap:18px;flex-wrap:wrap;margin:4px 0 16px}
-    .opts label{display:flex;gap:8px;align-items:center;color:#9cbab8;font-size:12px}
-    .opts input{accent-color:#39e9bb}
+    .opts label,.consent{display:flex;gap:9px;align-items:flex-start;color:#9cbab8;font-size:12px}
+    .opts input,.consent input{accent-color:#39e9bb;margin-top:2px}
+    .consent{margin:12px 0}
     .button{width:100%;border:1px solid var(--mint);color:#00120f;background:linear-gradient(105deg,#5effc6,#39d6ff);font:700 13px/1.2 inherit;letter-spacing:.16em;padding:13px;cursor:pointer;
       box-shadow:0 0 24px #54ffd533;clip-path:polygon(0 0,97% 0,100% 24%,100% 100%,3% 100%,0 76%);transition:.15s}
-    .button:hover{filter:brightness(1.12)}
-    .button:disabled{opacity:.45;cursor:wait;filter:saturate(.3)}
+    .button:hover{filter:brightness(1.12)}.button:disabled{opacity:.45;cursor:wait;filter:saturate(.3)}
     .fine{font-size:11px;color:#769293;margin:12px 0 0}
-    .lookup-flow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 16px;color:var(--muted);font-size:10px;letter-spacing:.1em}
-    .lookup-flow b{padding:6px 9px;border:1px solid #23575b;color:var(--mint);font-weight:500;box-shadow:0 0 14px #35ffd51a}
-    .lookup-flow span{color:var(--cyan)}
-    /* ---- side metrics ---- */
-    .side{display:grid;gap:18px;align-content:start}
-    .metric{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #143034}
-    .metric:last-child{border:0}
-    .metric strong{color:var(--mint);font-size:18px}
-    .tag{font-size:10px;padding:3px 7px;border:1px solid #256462;color:var(--mint);letter-spacing:.08em}
+    .side-metrics .metric{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #143034}
+    .side-metrics .metric:last-child{border:0}.side-metrics .metric strong{color:var(--mint);font-size:16px}
+    .tag{font-size:10px;padding:3px 7px;border:1px solid #256462;color:var(--mint);letter-spacing:.07em}
     .tag.off{border-color:#5a3a46;color:#ff93ac}
-    /* ---- results ---- */
-    .output,.lookup-results{display:none}
-    .output.show,.lookup-results.show{display:block;animation:rise .4s both}
+    /* results */
     .resultbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
     .resultbar strong{color:var(--mint);letter-spacing:.12em}
     .riskbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
     .riskpill{display:flex;align-items:center;gap:7px;padding:6px 11px;border:1px solid var(--line2);font-size:11px;letter-spacing:.08em}
     .riskpill b{font-size:15px}
-    .riskpill.high{border-color:#5a2434;color:var(--red)}
-    .riskpill.review{border-color:#5a4a24;color:var(--amber)}
-    .riskpill.info{border-color:#24455a;color:var(--cyan)}
-    .riskpill.ok{border-color:#24543f;color:var(--mint)}
+    .riskpill.high{border-color:#5a2434;color:var(--red)}.riskpill.review{border-color:#5a4a24;color:var(--amber)}
+    .riskpill.info{border-color:#24455a;color:var(--cyan)}.riskpill.ok{border-color:#24543f;color:var(--mint)}
     .tablewrap{overflow:auto;border:1px solid var(--line)}
     table{border-collapse:collapse;width:100%;font-size:12px}
     th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #142d31;vertical-align:top}
-    th{color:var(--muted);font-weight:500;letter-spacing:.08em}
+    th{color:var(--muted);font-weight:500;letter-spacing:.07em}
     td.open{color:var(--mint)}td.closed{color:#799091}td.filtered_or_timeout{color:var(--amber)}
-    .findings{display:grid;gap:9px;margin-top:14px}
+    .findings{display:grid;gap:9px;margin-top:6px}
     .finding{padding:12px 13px;border-left:3px solid var(--amber);background:#0d1719;animation:rise .35s both}
-    .finding.INFO{border-color:var(--cyan)}
-    .finding.HIGH{border-color:var(--red);background:#1a0e13}
-    .finding.OK{border-color:var(--mint)}
-    .finding .ftitle{color:var(--text);font-weight:700}
-    .finding.HIGH .ftitle{color:var(--red)}
+    .finding.INFO{border-color:var(--cyan)}.finding.HIGH{border-color:var(--red);background:#1a0e13}.finding.OK{border-color:var(--mint)}
+    .finding .ftitle{color:var(--text);font-weight:700}.finding.HIGH .ftitle{color:var(--red)}
     .finding .fdetail{color:#a9c7c3;margin:5px 0 0;font-size:12.5px}
     .finding .ffix{margin:8px 0 0;padding:8px 10px;border:1px dashed #2b6b5f;background:#06130f;color:var(--mint);font-size:12px}
-    .finding .ffix b{color:var(--mint);letter-spacing:.1em}
+    .finding .ffix b{letter-spacing:.1em}
     .error{color:var(--red);white-space:pre-wrap;font-size:12px}
     .source-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
     .report-title{color:var(--muted);font-size:10px;letter-spacing:.12em;margin:18px 0 8px}
@@ -147,215 +132,293 @@
     @keyframes draw{to{stroke-dashoffset:0}}
     .gcircle{fill:#06181b;stroke:var(--mint);stroke-width:1.6;filter:drop-shadow(0 0 4px #45ffd2aa);opacity:0;animation:pop .35s ease forwards}
     .gcircle.root{stroke:var(--cyan);fill:#07222b;filter:drop-shadow(0 0 7px #39d6ffcc)}
-    @keyframes pop{from{opacity:0}to{opacity:1}}
+    @keyframes pop{to{opacity:1}}
     .glabel{fill:var(--text);font:600 12px "Cascadia Code",Consolas,monospace;opacity:0;animation:pop .4s ease forwards}
     .glabel.root{fill:var(--cyan);letter-spacing:.06em}
     .gvalue{fill:#8fb7b2;font:11px "Cascadia Code",Consolas,monospace;opacity:0;animation:pop .45s ease forwards}
     .report-actions{display:flex;justify-content:flex-end;margin:12px 0}
     .secondary-button{border:1px solid #256462;background:#071114;color:var(--mint);padding:8px 12px;font:inherit;font-size:11px;letter-spacing:.08em;cursor:pointer}
-    .secondary-button:hover{border-color:var(--cyan);color:var(--cyan)}
-    .secondary-button:disabled{opacity:.4;cursor:not-allowed}
+    .secondary-button:hover{border-color:var(--cyan);color:var(--cyan)}.secondary-button:disabled{opacity:.4;cursor:not-allowed}
     .resources{display:none;margin:14px 0;padding:13px;border:1px solid #245358;background:#071316}
-    .resources.show{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    .resources p{margin:0;color:var(--muted);font-size:11px}
-    .resources a{font-size:11px;letter-spacing:.06em;display:block;margin:2px 0}
+    .resources.show{display:block}
+    .resources p{margin:0 0 6px;color:var(--muted);font-size:11px}.resources a{font-size:11px;display:block;margin:2px 0}
     pre{max-height:360px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#03090b;border:1px solid #17383d;padding:14px;color:#b9e9df;font-size:12px}
-    .scanline{height:1px;background:linear-gradient(90deg,transparent,var(--mint),transparent);box-shadow:0 0 12px var(--mint);opacity:.35;margin:24px 0 0}
-    .foot{margin-top:20px;color:#698384;font-size:10px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .ethics{margin-top:18px;padding:13px 15px;border:1px solid #2a4a2f;background:#081410;color:#9fd0b4;font-size:11.5px;line-height:1.6}
-    .ethics b{color:var(--mint)}
-    @media(max-width:820px){.hero,.grid{grid-template-columns:1fr}.orb-wrap{height:180px}.row{grid-template-columns:1fr}.shell{padding:16px 13px}}
-    @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important}.sweep,body:after{display:none}}
+    .recent{display:grid;gap:7px}.recent .r{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--line);background:#081315;cursor:pointer;font-size:12px}
+    .recent .r:hover{border-color:var(--line2)}.recent .r span{color:var(--muted)}.recent .empty{color:var(--muted2);font-size:12px}
+    .ethics{padding:14px 16px;border:1px solid #2a4a2f;background:#081410;color:#9fd0b4;font-size:12.5px;line-height:1.7}
+    .ethics b{color:var(--mint)}.ethics h3{margin:0 0 10px;color:var(--mint);letter-spacing:.1em;font-size:13px}
+    .ethics ul{margin:8px 0 0;padding-left:18px}.ethics li{margin:4px 0}
+    .menu-toggle{display:none}
+    /* responsive */
+    @media(max-width:860px){
+      .app{grid-template-columns:1fr}
+      .side{position:fixed;left:0;top:0;width:238px;z-index:60;transform:translateX(-100%);transition:transform .25s}
+      .side.open{transform:none;box-shadow:0 0 40px #000a}
+      .sweep{left:0}
+      .menu-toggle{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line2);background:#071316;color:var(--mint);cursor:pointer}
+      .cols{grid-template-columns:1fr}.row{grid-template-columns:1fr}
+      .scrim{position:fixed;inset:0;background:#000a;z-index:55;display:none}.scrim.show{display:block}
+    }
+    @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important}.sweep{display:none}}
   </style>
 </head>
 <body>
-<div class="crt"></div><div class="sweep"></div>
-<main class="shell">
-  <header class="top">
-    <div class="brand"><div class="logo">F</div><div><h1>FLMP <span style="color:var(--mint)">//</span> SENTINEL</h1><small>FiveM exposure &amp; OSINT console · local mode</small></div></div>
-    <div class="status"><span><span class="dot"></span>ONLINE</span><span>ENGINE <b id="statEngine">NMAP</b></span><span>BIND <b>127.0.0.1</b></span></div>
-  </header>
-
-  <section class="hero">
-    <div>
-      <div class="eyebrow">AUTHORIZED SECURITY &amp; EXPOSURE ANALYSIS</div>
-      <h2>Map the attack surface.<br><span class="accent">Find the holes.</span> <span class="type" id="typeline"></span><span class="cursor"></span></h2>
-      <p>Low-impact Nmap recon plus public technical metadata for servers and assets <b style="color:var(--mint)">you are authorized to test</b>. Every finding ships with a concrete fix so you can close it.</p>
-      <div class="cta"><a class="chip solid" href="#scan">▶ START SERVER SCAN</a><a class="chip" href="#lookup">PUBLIC LOOKUP</a><a class="chip" href="#modules">MODULES</a></div>
+<div class="sweep"></div>
+<div class="scrim" id="scrim"></div>
+<div class="app">
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="side" id="side">
+    <div class="brand"><div class="logo">F</div><div><b>FLMP <span>//</span> SENTINEL</b></div></div>
+    <div class="navsec">SECURITY WORKSPACE</div>
+    <div class="nav active" data-view="dashboard"><span class="ni">▦</span>Dashboard</div>
+    <div class="nav" data-view="scan"><span class="ni">◈</span>Server Scan<span class="tag">NMAP</span></div>
+    <div class="nav" data-view="lookup" data-mode="domain"><span class="ni">⬡</span>Domain Intel</div>
+    <div class="nav" data-view="lookup" data-mode="ip"><span class="ni">◉</span>IP Info</div>
+    <div class="nav" data-view="lookup" data-mode="email"><span class="ni">✉</span>Email DNS</div>
+    <div class="navsec">LOCAL METADATA</div>
+    <div class="nav" data-view="lookup" data-mode="discord"><span class="ni">❖</span>Discord ID</div>
+    <div class="nav" data-view="lookup" data-mode="phone"><span class="ni">☎</span>Phone</div>
+    <div class="nav" data-view="lookup" data-mode="username"><span class="ni">@</span>Username</div>
+    <div class="navsec">SYSTEM</div>
+    <div class="nav" data-view="scope"><span class="ni">⚖</span>Scope &amp; Ethics</div>
+    <div class="foot">
+      <div class="st"><span class="dot"></span>LOCAL · 127.0.0.1</div>
+      <div style="margin-top:6px">Made by plbct0 &amp; <b style="color:var(--mint)">sauceyC4</b></div>
     </div>
-    <div class="orb-wrap" aria-hidden="true"><div class="orb"><div class="core"></div><div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div><div class="node"></div></div></div>
-  </section>
+  </aside>
 
-  <div class="section-label" id="modules">// MODULES · ALL CHECKS ARE PUBLIC-DATA OR AUTHORIZED-TARGET ONLY</div>
-  <div class="tiles" id="tiles"></div>
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="menu-toggle" id="menuToggle">☰</div>
+        <div><h1 id="viewTitle">Dashboard</h1><div class="crumbs" id="viewCrumb">FLMP · overview</div></div>
+      </div>
+      <div class="chips"><span class="chip"><span class="dot"></span>ONLINE</span><span class="chip">ENGINE <b>NMAP</b></span><span class="chip">DATA <b>NOT STORED</b></span></div>
+    </div>
 
-  <section class="panel" id="scan">
-    <div class="panel-head"><span>SERVER SCAN · VULNERABILITY EXPOSURE</span><span class="tag">NMAP · T2 · SAFE INFO</span></div>
-    <div class="panel-body">
-      <div class="grid" style="margin-top:0">
-        <div>
-          <form id="scanform">
-            <div class="field"><label for="ip">SERVER IP (IPv4 / IPv6)</label><input id="ip" name="ip" placeholder="e.g. 203.0.113.10" required autocomplete="off" spellcheck="false"></div>
-            <div class="row">
-              <div class="field"><label for="ports">TCP PORTS / RANGES · MAX. 1024</label><input id="ports" name="ports" value="22,80,443,3306,6379,30120,40120" required></div>
-              <div class="field"><label for="timing">PROFILE</label><input id="timing" value="T2 · LIGHT" disabled></div>
+    <!-- ===== DASHBOARD ===== -->
+    <section class="view active" data-name="dashboard">
+      <div class="hero">
+        <div class="eyebrow">AUTHORIZED SECURITY &amp; EXPOSURE ANALYSIS</div>
+        <h2>Map the attack surface. <span class="accent">Find the holes.</span> <span class="type" id="typeline"></span><span class="cursor"></span></h2>
+        <p>Low-impact Nmap recon plus public technical metadata for servers and assets <b style="color:var(--mint)">you are authorized to test</b>. Every finding ships with a concrete fix.</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="spark">◦</div><div class="lbl">MODULES</div><div class="val">8</div><div class="sub">scan + public OSINT</div></div>
+        <div class="stat"><div class="spark">◈</div><div class="lbl">SCAN ENGINE</div><div class="val" style="font-size:19px">Nmap · T2</div><div class="sub">connect + light detect</div></div>
+        <div class="stat"><div class="spark">⚑</div><div class="lbl">EXPOSURE RULES</div><div class="val">9</div><div class="sub">services with fix advice</div></div>
+        <div class="stat"><div class="spark">⛉</div><div class="lbl">DATA STORED</div><div class="val" style="font-size:19px">None</div><div class="sub">local, nothing saved</div></div>
+      </div>
+      <div class="section-label">// TOOLS · PUBLIC-DATA OR AUTHORIZED-TARGET ONLY</div>
+      <div class="tools" id="tools"></div>
+      <div class="section-label" style="margin-top:22px">// RECENT LOOKUPS · THIS BROWSER ONLY</div>
+      <div class="recent" id="recent"><div class="empty">Nothing yet — your lookups appear here.</div></div>
+    </section>
+
+    <!-- ===== SERVER SCAN ===== -->
+    <section class="view" data-name="scan">
+      <div class="panel">
+        <div class="panel-head"><span>SERVER SCAN · VULNERABILITY EXPOSURE</span><span class="tag">NMAP · T2 · SAFE INFO</span></div>
+        <div class="panel-body">
+          <div class="cols">
+            <form id="scanform">
+              <div class="field"><label for="ip">SERVER IP (IPv4 / IPv6)</label><input id="ip" name="ip" placeholder="e.g. 203.0.113.10" required autocomplete="off" spellcheck="false"></div>
+              <div class="row">
+                <div class="field"><label for="ports">TCP PORTS / RANGES · MAX. 1024</label><input id="ports" name="ports" value="22,80,443,3306,6379,30120,40120" required></div>
+                <div class="field"><label for="timing">PROFILE</label><input id="timing" value="T2 · LIGHT" disabled></div>
+              </div>
+              <label class="consent"><input id="authorized" type="checkbox" required><span>I confirm this server IP is <b>explicitly authorized</b> for this check (my own server or a signed engagement).</span></label>
+              <button class="button" id="scanbtn" type="submit">▶ &nbsp; START VULNERABILITY SCAN</button>
+              <p class="fine">Checks: open ports, sensitive exposed services, TLS certificate, security headers. No UDP, exploit, brute-force, or password tests.</p>
+            </form>
+            <aside class="side-metrics">
+              <div class="metric"><span>TCP connect scan</span><strong>●</strong></div>
+              <div class="metric"><span>Service / version</span><strong>●</strong></div>
+              <div class="metric"><span>TLS cert + headers</span><strong>●</strong></div>
+              <div class="metric"><span>Exposed-service rules</span><strong>●</strong></div>
+              <div class="metric"><span>Exploit / brute-force</span><span class="tag off">DISABLED</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="scanoutput" style="display:none">
+        <div class="panel-head"><span>SCAN REPORT</span><span class="tag" id="targetlabel">—</span></div>
+        <div class="panel-body">
+          <div class="resultbar"><strong id="summary">RESULTS</strong><span id="err" class="error"></span></div>
+          <div class="riskbar" id="riskbar"></div>
+          <div class="tablewrap"><table><thead><tr><th>PORT</th><th>PROTO</th><th>STATE</th><th>SERVICE / VERSION</th></tr></thead><tbody id="portsbody"></tbody></table></div>
+          <div class="report-title">FINDINGS &amp; FIXES</div>
+          <div class="findings" id="findings"></div>
+          <p class="fine" id="limits"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== LOOKUP (shared) ===== -->
+    <section class="view" data-name="lookup">
+      <div class="panel">
+        <div class="panel-head"><span id="lookupHead">PUBLIC ARTIFACT LOOKUP</span><span class="tag">PUBLIC SOURCES ONLY</span></div>
+        <div class="panel-body">
+          <form id="osintform">
+            <div class="field"><label id="lookupLabel" for="artifact">ARTIFACT</label><input id="artifact" name="artifact" placeholder="example.org" required autocomplete="off" spellcheck="false"></div>
+            <div class="opts">
+              <label id="optGeo" style="display:none"><input id="includegeo" type="checkbox"><span>IP geolocation (sends the IP to ipwho.is)</span></label>
+              <label id="optCt" style="display:none"><input id="includect" type="checkbox"><span>Subdomains via crt.sh</span></label>
             </div>
-            <label class="consent"><input id="authorized" type="checkbox" required><span>I confirm this server IP is <b>explicitly authorized</b> for this check (my own server or a signed engagement).</span></label>
-            <button class="button" id="scanbtn" type="submit">▶ &nbsp; START VULNERABILITY SCAN</button>
-            <p class="fine">Checks: open ports, sensitive exposed services, TLS certificate, security headers. No UDP, exploit, brute-force, or password tests. Dashboard stays on localhost.</p>
+            <button class="button" id="osintbtn" type="submit">▶ &nbsp; RUN LOOKUP</button>
+            <p class="fine" id="lookupFine">Public technical metadata only. No breach/leak databases, no owner, identity, or cross-platform account search.</p>
           </form>
         </div>
-        <aside class="side">
-          <div class="metric"><span>TCP connect scan</span><strong>●</strong></div>
-          <div class="metric"><span>Service / version detect</span><strong>●</strong></div>
-          <div class="metric"><span>TLS cert + headers</span><strong>●</strong></div>
-          <div class="metric"><span>Exposed-service rules</span><strong>●</strong></div>
-          <div class="metric"><span>Exploit / brute-force</span><span class="tag off">DISABLED</span></div>
-        </aside>
       </div>
-    </div>
-  </section>
-
-  <section class="panel output" id="output">
-    <div class="panel-head"><span>SCAN REPORT</span><span class="tag" id="targetlabel">—</span></div>
-    <div class="panel-body">
-      <div class="resultbar"><strong id="summary">RESULTS</strong><span id="err" class="error"></span></div>
-      <div class="riskbar" id="riskbar"></div>
-      <div class="tablewrap"><table><thead><tr><th>PORT</th><th>PROTO</th><th>STATE</th><th>SERVICE / VERSION</th></tr></thead><tbody id="portsbody"></tbody></table></div>
-      <div class="report-title">FINDINGS &amp; FIXES</div>
-      <div class="findings" id="findings"></div>
-      <p class="fine" id="limits"></p>
-    </div>
-  </section>
-
-  <section class="panel" id="lookup">
-    <div class="panel-head"><span>PUBLIC ARTIFACT LOOKUP · AUTO-DETECT</span><span class="tag">PUBLIC SOURCES ONLY</span></div>
-    <div class="panel-body">
-      <div class="lookup-flow"><b>ARTIFACT</b><span>→</span><b>DNS · RDAP · CT · SNOWFLAKE · NUMBERING PLAN</b><span>→</span><b>REPORT</b></div>
-      <form id="osintform">
-        <div class="field"><label for="artifact">EMAIL · DOMAIN · PUBLIC IP · PHONE · DISCORD ID · @USERNAME</label><input id="artifact" name="artifact" placeholder="example.org · 8.8.8.8 · +442083661177 · @handle · 1759288..." required autocomplete="off" spellcheck="false"></div>
-        <div class="opts">
-          <label><input id="includegeo" type="checkbox"><span>IP geolocation (sends the IP to ipwho.is)</span></label>
-          <label><input id="includect" type="checkbox"><span>Domain subdomains via crt.sh</span></label>
+      <div class="panel" id="osintresults" style="display:none">
+        <div class="panel-head"><span>PUBLIC INTELLIGENCE REPORT</span><span class="tag" id="detectedtype">—</span></div>
+        <div class="panel-body">
+          <div class="resultbar"><strong id="osintsummary">RESULTS</strong><span id="osinterr" class="error"></span></div>
+          <div class="source-tags" id="sourcetags"></div>
+          <div class="report-title">RELATIONSHIP VIEW · PUBLIC ATTRIBUTES ONLY</div>
+          <div class="graph" id="artifactgraph" aria-live="polite"></div>
+          <div class="resources" id="emailresources"><p>Manual follow-up directory. FLMP does not send this address to external tools.</p><a href="https://mail.osintframework.com/" target="_blank" rel="noopener noreferrer">OPEN MAIL OSINT FRAMEWORK ↗</a></div>
+          <div class="resources" id="discordresources"><p>Discord account-owner resources. These do not reveal another user's private details.</p><a href="https://support.discord.com/hc/en-us/articles/12620128861463-New-Usernames-and-Display-Names" target="_blank" rel="noopener noreferrer">USERNAME &amp; DISPLAY NAME RULES ↗</a><a href="https://support.discord.com/hc/en-us/articles/360004957991-Your-Discord-Data-Package" target="_blank" rel="noopener noreferrer">REQUEST YOUR OWN DATA PACKAGE ↗</a><a href="https://support.discord.com/hc/en-us/articles/360004109911-Data-Privacy-Controls" target="_blank" rel="noopener noreferrer">ACCOUNT PRIVACY CONTROLS ↗</a></div>
+          <div class="report-actions"><button class="secondary-button" id="exportreport" type="button" disabled>↓ &nbsp; EXPORT JSON REPORT</button></div>
+          <div class="report-title">RAW RESULT</div>
+          <pre id="osintjson"></pre>
         </div>
-        <button class="button" id="osintbtn" type="submit">▶ &nbsp; RUN PUBLIC LOOKUP</button>
-        <p class="fine">Public technical metadata only. No breach/leak databases, no owner, identity, or cross-platform account search. Phone and username checks run locally.</p>
-      </form>
-    </div>
-  </section>
+      </div>
+    </section>
 
-  <section class="panel lookup-results" id="osintresults">
-    <div class="panel-head"><span>PUBLIC INTELLIGENCE REPORT</span><span class="tag" id="detectedtype">—</span></div>
-    <div class="panel-body">
-      <div class="resultbar"><strong id="osintsummary">RESULTS</strong><span id="osinterr" class="error"></span></div>
-      <div class="source-tags" id="sourcetags"></div>
-      <div class="report-title">RELATIONSHIP VIEW · PUBLIC ATTRIBUTES ONLY</div>
-      <div class="graph" id="artifactgraph" aria-live="polite"></div>
-      <div class="resources" id="emailresources"><p>Manual follow-up directory. FLMP does not send this address to external tools.</p><a href="https://mail.osintframework.com/" target="_blank" rel="noopener noreferrer">OPEN MAIL OSINT FRAMEWORK ↗</a></div>
-      <div class="resources" id="discordresources"><p>Discord account-owner resources. These do not reveal another user's private details.</p><div><a href="https://support.discord.com/hc/en-us/articles/12620128861463-New-Usernames-and-Display-Names" target="_blank" rel="noopener noreferrer">USERNAME &amp; DISPLAY NAME RULES ↗</a><a href="https://support.discord.com/hc/en-us/articles/360004957991-Your-Discord-Data-Package" target="_blank" rel="noopener noreferrer">REQUEST YOUR OWN DATA PACKAGE ↗</a><a href="https://support.discord.com/hc/en-us/articles/360004109911-Data-Privacy-Controls" target="_blank" rel="noopener noreferrer">ACCOUNT PRIVACY CONTROLS ↗</a></div></div>
-      <div class="report-actions"><button class="secondary-button" id="exportreport" type="button" disabled>↓ &nbsp; EXPORT JSON REPORT</button></div>
-      <div class="report-title">RAW RESULT</div>
-      <pre id="osintjson"></pre>
-    </div>
-  </section>
-
-  <div class="ethics"><b>SCOPE &amp; ETHICS.</b> FLMP handles public technical metadata and scans only targets you are authorized to test. It has <b>no</b> breach/leak lookup, people search, or account-deanonymization features, by design. Use it on your own servers, in signed engagements, or for CTFs.</div>
-
-  <div class="scanline"></div>
-  <footer class="foot"><span>FLMP SENTINEL · LOCAL DASHBOARD</span><span>Made by plbct0 and <strong>sauceyC4</strong></span><span>Authorized scope only.</span></footer>
-</main>
+    <!-- ===== SCOPE & ETHICS ===== -->
+    <section class="view" data-name="scope">
+      <div class="panel"><div class="panel-head"><span>SCOPE &amp; ETHICS</span><span class="tag">BY DESIGN</span></div>
+        <div class="panel-body"><div class="ethics">
+          <h3>WHAT FLMP DOES</h3>
+          FLMP handles <b>public technical metadata</b> and scans only targets you are authorized to test.
+          <ul>
+            <li>Server scans behind an explicit authorization confirmation — your own server or a signed engagement.</li>
+            <li>Public DNS, RDAP and Certificate Transparency for domains and IPs.</li>
+            <li>Locally decoded Discord Snowflakes, offline phone numbering plans, username format checks.</li>
+            <li>Every exposure finding comes with a concrete fix.</li>
+          </ul>
+          <h3 style="margin-top:16px">WHAT IT DELIBERATELY HAS NOT</h3>
+          No breach/leak lookup, no stealer-log or credential dumps, no people search, and no account
+          deanonymization (Discord/Roblox/TikTok identity, history, or cross-platform matching). Those
+          target private individuals and are out of scope on purpose.
+        </div></div>
+      </div>
+    </section>
+  </div>
+</div>
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
-/* ---------- hero typing effect ---------- */
-(function(){const words=["recon.","exposure.","hardening.","OSINT metadata.","authorized targets."];let w=0,c=0,del=false;const el=$('#typeline');
-  function tick(){const word=words[w];el.textContent=word.slice(0,c);
-    if(!del&&c<word.length){c++;setTimeout(tick,70)}
-    else if(!del){del=true;setTimeout(tick,1400)}
-    else if(c>0){c--;setTimeout(tick,35)}
-    else{del=false;w=(w+1)%words.length;setTimeout(tick,220)}}
-  tick();})();
-/* ---------- module tiles ---------- */
-const MODULES=[
-  {ico:"◈",h:"Server Scan",p:"Open ports, exposed services & web exposure on an authorized host — each with a fix.",go:"#scan"},
-  {ico:"⬡",h:"Domain Intel",p:"A/AAAA/MX/NS/TXT/CAA/SOA records plus RDAP registrar & lifecycle dates.",go:"#lookup"},
-  {ico:"⌖",h:"CT Subdomains",p:"Host names seen in public Certificate Transparency logs (crt.sh).",go:"#lookup"},
-  {ico:"◉",h:"IP Lookup",p:"RDAP network, reverse DNS and optional approximate geolocation & ASN.",go:"#lookup"},
-  {ico:"✉",h:"Email DNS Policy",p:"MX, SPF and DMARC posture for a domain. No mailbox or owner lookup.",go:"#lookup"},
-  {ico:"❖",h:"Discord Snowflake",p:"Decode account-creation time & ID metadata locally. No identity lookup.",go:"#lookup"},
-  {ico:"☎",h:"Phone Metadata",p:"Offline numbering-plan parsing: region, type, validity. No owner or location.",go:"#lookup"},
-  {ico:"↧",h:"JSON Export",p:"Export any lookup as a clean JSON report for your case notes.",go:"#lookup"},
+const $$=s=>document.querySelectorAll(s);
+/* ---------- tools metadata ---------- */
+const TOOLS=[
+  {ico:"◈",h:"Server Scan",p:"Open ports, exposed services & web exposure on an authorized host — each with a fix.",view:"scan"},
+  {ico:"⬡",h:"Domain Intel",p:"A/AAAA/MX/NS/TXT/CAA/SOA plus RDAP registrar & lifecycle dates.",view:"lookup",mode:"domain"},
+  {ico:"⌖",h:"CT Subdomains",p:"Host names seen in public Certificate Transparency logs (crt.sh).",view:"lookup",mode:"domain"},
+  {ico:"◉",h:"IP Info",p:"RDAP network, reverse DNS and optional approximate geolocation & ASN.",view:"lookup",mode:"ip"},
+  {ico:"✉",h:"Email DNS Policy",p:"MX, SPF and DMARC posture for a domain. No mailbox or owner lookup.",view:"lookup",mode:"email"},
+  {ico:"❖",h:"Discord Snowflake",p:"Decode account-creation time & ID metadata locally. No identity lookup.",view:"lookup",mode:"discord"},
+  {ico:"☎",h:"Phone Metadata",p:"Offline numbering-plan parsing: region, type, validity. No owner or location.",view:"lookup",mode:"phone"},
+  {ico:"@",h:"Username Format",p:"Local Discord handle format check. No availability or account search.",view:"lookup",mode:"username"},
 ];
-const tiles=$('#tiles');
-MODULES.forEach((m,i)=>{const t=document.createElement('a');t.className='tile';t.href=m.go;t.style.animationDelay=(i*55)+'ms';
-  t.innerHTML=`<div class="ico">${m.ico}</div><span class="go">→</span><h4></h4><p></p>`;
-  t.querySelector('h4').textContent=m.h;t.querySelector('p').textContent=m.p;tiles.append(t);});
-/* ---------- shared helpers ---------- */
+const LOOKUP={
+  domain:{head:"DOMAIN INTELLIGENCE",label:"DOMAIN NAME",ph:"example.org",ct:true,geo:false,fine:"Public DNS + RDAP registry data. Enable crt.sh to list subdomains from certificate logs."},
+  ip:{head:"IP INFO",label:"PUBLIC IP ADDRESS",ph:"8.8.8.8",ct:false,geo:true,fine:"RDAP network and reverse DNS. Geolocation is optional and sends the IP to ipwho.is."},
+  email:{head:"EMAIL DNS POLICY",label:"EMAIL ADDRESS",ph:"name@example.org",ct:false,geo:false,fine:"Checks domain MX, SPF and DMARC. Mailbox existence and owner are never checked."},
+  discord:{head:"DISCORD SNOWFLAKE",label:"DISCORD ID · MENTION · PROFILE URL",ph:"175928847299117063",ct:false,geo:false,fine:"Decodes the Snowflake timestamp locally. No identity, email, IP, messages or servers."},
+  phone:{head:"PHONE METADATA",label:"INTERNATIONAL NUMBER (+country code)",ph:"+442083661177",ct:false,geo:false,fine:"Offline numbering-plan metadata only. No owner, carrier or device location."},
+  username:{head:"USERNAME FORMAT",label:"DISCORD USERNAME (prefix @ to force)",ph:"@sample_user",ct:false,geo:false,fine:"Local format check only. No availability, account or cross-platform search."},
+};
+/* ---------- router ---------- */
+function setView(view,mode){
+  $$('.view').forEach(v=>v.classList.toggle('active',v.dataset.name===view));
+  $$('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view===view&&(n.dataset.mode||'')===(mode||n.dataset.mode||'')&&(view!=='lookup'||n.dataset.mode===mode)));
+  const titles={dashboard:['Dashboard','FLMP · overview'],scan:['Server Scan','FLMP · vulnerability exposure'],lookup:['Lookup','FLMP · public OSINT'],scope:['Scope & Ethics','FLMP · policy']};
+  if(view==='lookup'&&mode){const c=LOOKUP[mode];$('#viewTitle').textContent=c.head.replace(/\b\w+/g,w=>w[0]+w.slice(1).toLowerCase());$('#viewCrumb').textContent='FLMP · public OSINT';configureLookup(mode);}
+  else if(titles[view]){$('#viewTitle').textContent=titles[view][0];$('#viewCrumb').textContent=titles[view][1];}
+  closeSide();window.scrollTo({top:0,behavior:'smooth'});
+}
+function configureLookup(mode){
+  const c=LOOKUP[mode];if(!c)return;
+  $('#lookupHead').textContent=c.head;$('#lookupLabel').textContent=c.label;
+  $('#artifact').placeholder=c.ph;$('#artifact').value='';
+  $('#optGeo').style.display=c.geo?'flex':'none';$('#optCt').style.display=c.ct?'flex':'none';
+  $('#includegeo').checked=false;$('#includect').checked=false;$('#lookupFine').textContent=c.fine;
+  $('#osintresults').style.display='none';
+}
+$$('.nav').forEach(n=>n.addEventListener('click',()=>setView(n.dataset.view,n.dataset.mode)));
+/* ---------- mobile sidebar ---------- */
+function openSide(){$('#side').classList.add('open');$('#scrim').classList.add('show');}
+function closeSide(){$('#side').classList.remove('open');$('#scrim').classList.remove('show');}
+$('#menuToggle').addEventListener('click',openSide);$('#scrim').addEventListener('click',closeSide);
+/* ---------- dashboard tiles + typing ---------- */
+const tools=$('#tools');
+TOOLS.forEach((t,i)=>{const el=document.createElement('div');el.className='tool';el.style.animationDelay=(i*50)+'ms';
+  el.innerHTML=`<div class="ico"></div><span class="go">→</span><h4></h4><p></p>`;
+  el.querySelector('.ico').textContent=t.ico;el.querySelector('h4').textContent=t.h;el.querySelector('p').textContent=t.p;
+  el.addEventListener('click',()=>setView(t.view,t.mode));tools.append(el);});
+(function(){const words=["recon.","exposure.","hardening.","authorized targets."];let w=0,c=0,del=false;const el=$('#typeline');
+  (function tick(){const word=words[w];el.textContent=word.slice(0,c);
+    if(!del&&c<word.length){c++;setTimeout(tick,70);}else if(!del){del=true;setTimeout(tick,1300);}
+    else if(c>0){c--;setTimeout(tick,34);}else{del=false;w=(w+1)%words.length;setTimeout(tick,220);}})();})();
+/* ---------- recent lookups (localStorage) ---------- */
+function loadRecent(){let items=[];try{items=JSON.parse(localStorage.getItem('flmp_recent')||'[]');}catch(e){}
+  const box=$('#recent');box.replaceChildren();
+  if(!items.length){box.innerHTML='<div class="empty">Nothing yet — your lookups appear here.</div>';return;}
+  for(const it of items.slice(0,8)){const r=document.createElement('div');r.className='r';
+    r.innerHTML='<span></span><span style="color:var(--mint)"></span>';
+    r.children[0].textContent=it.query;r.children[1].textContent=it.type.toUpperCase();
+    r.addEventListener('click',()=>{setView('lookup',it.type==='email'?'email':it.type==='ip'?'ip':it.type==='domain'?'domain':it.type==='phone'?'phone':it.type==='discord'?'discord':'username');$('#artifact').value=it.query;});
+    box.append(r);}
+}
+function pushRecent(query,type){try{let items=JSON.parse(localStorage.getItem('flmp_recent')||'[]');
+  items=items.filter(i=>!(i.query===query&&i.type===type));items.unshift({query,type,at:Date.now()});
+  localStorage.setItem('flmp_recent',JSON.stringify(items.slice(0,12)));}catch(e){}loadRecent();}
+loadRecent();
+/* ---------- findings ---------- */
 const RISK_ORDER={HIGH:0,REVIEW:1,INFO:2,OK:3};
-function renderFindings(container,findings){
-  container.replaceChildren();
-  const sorted=[...findings].sort((a,b)=>(RISK_ORDER[a.level]??9)-(RISK_ORDER[b.level]??9));
-  for(const f of sorted){
+function renderFindings(container,findings){container.replaceChildren();
+  [...findings].sort((a,b)=>(RISK_ORDER[a.level]??9)-(RISK_ORDER[b.level]??9)).forEach(f=>{
     const item=document.createElement('div');item.className='finding '+f.level;
-    const title=document.createElement('div');title.className='ftitle';title.textContent=`[${f.level}] ${f.title}`;
-    const detail=document.createElement('div');detail.className='fdetail';detail.textContent=f.detail||'';
-    item.append(title,detail);
-    if(f.fix){const fix=document.createElement('div');fix.className='ffix';const b=document.createElement('b');b.textContent='FIX ▸ ';const span=document.createElement('span');span.textContent=f.fix;fix.append(b,span);item.append(fix);}
-    container.append(item);
-  }
-}
-function renderRiskbar(findings){
-  const bar=$('#riskbar');bar.replaceChildren();
-  const counts={HIGH:0,REVIEW:0,INFO:0};
-  for(const f of findings)if(counts[f.level]!==undefined)counts[f.level]++;
-  const defs=[['high','HIGH','CRITICAL / HIGH'],['review','REVIEW','REVIEW'],['info','INFO','INFO']];
-  let any=false;
-  for(const [cls,key,label] of defs){const pill=document.createElement('div');pill.className='riskpill '+cls;
-    const b=document.createElement('b');b.textContent=counts[key];const span=document.createElement('span');span.textContent=label;
-    pill.append(b,span);bar.append(pill);if(counts[key])any=true;}
-  if(!any){const pill=document.createElement('div');pill.className='riskpill ok';pill.innerHTML='<b>✓</b><span>NO EXPOSURE FLAGS</span>';bar.replaceChildren(pill);}
-}
+    const t=document.createElement('div');t.className='ftitle';t.textContent=`[${f.level}] ${f.title}`;
+    const d=document.createElement('div');d.className='fdetail';d.textContent=f.detail||'';item.append(t,d);
+    if(f.fix){const fx=document.createElement('div');fx.className='ffix';const b=document.createElement('b');b.textContent='FIX ▸ ';const s=document.createElement('span');s.textContent=f.fix;fx.append(b,s);item.append(fx);}
+    container.append(item);});}
+function renderRiskbar(findings){const bar=$('#riskbar');bar.replaceChildren();
+  const counts={HIGH:0,REVIEW:0,INFO:0};findings.forEach(f=>{if(counts[f.level]!==undefined)counts[f.level]++;});
+  let any=false;[['high','HIGH','CRITICAL / HIGH'],['review','REVIEW','REVIEW'],['info','INFO','INFO']].forEach(([cls,k,lbl])=>{
+    const p=document.createElement('div');p.className='riskpill '+cls;const b=document.createElement('b');b.textContent=counts[k];const s=document.createElement('span');s.textContent=lbl;p.append(b,s);bar.append(p);if(counts[k])any=true;});
+  if(!any){bar.replaceChildren();const p=document.createElement('div');p.className='riskpill ok';p.innerHTML='<b>✓</b><span>NO EXPOSURE FLAGS</span>';bar.append(p);}}
 /* ---------- scan ---------- */
-$('#scanform').addEventListener('submit',async e=>{e.preventDefault();
-  const out=$('#output'),btn=$('#scanbtn');out.classList.add('show');
+$('#scanform').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#scanbtn');$('#scanoutput').style.display='block';
   $('#err').textContent='';$('#portsbody').replaceChildren();$('#findings').replaceChildren();$('#riskbar').replaceChildren();
   $('#summary').textContent='SCAN IN PROGRESS …';btn.disabled=true;
-  try{
-    const r=await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip:$('#ip').value.trim(),ports:$('#ports').value.trim(),authorized:$('#authorized').checked})});
+  try{const r=await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip:$('#ip').value.trim(),ports:$('#ports').value.trim(),authorized:$('#authorized').checked})});
     const data=await r.json();if(!r.ok)throw new Error(data.error||'Scan failed');
-    $('#targetlabel').textContent=data.target;
-    const list=data.ports||[];
+    $('#targetlabel').textContent=data.target;const list=data.ports||[];
     $('#summary').textContent=`${list.filter(p=>p.state==='open').length} OPEN · ${list.length} PORTS · ${(data.findings||[]).length} FINDINGS`;
-    for(const p of list){const row=document.createElement('tr');
-      const svc=[p.service,p.product,p.version,...(p.scripts||[]).map(s=>s.id+': '+s.output)].filter(Boolean).join(' ')||'—';
-      for(const val of [p.port,p.protocol||'tcp',p.state,svc]){const cell=document.createElement('td');cell.textContent=val;
-        if(typeof val==='string'&&['open','closed','filtered_or_timeout'].includes(val))cell.className=val;row.append(cell);}
-      $('#portsbody').append(row);}
-    renderRiskbar(data.findings||[]);
-    renderFindings($('#findings'),data.findings||[]);
-    $('#limits').textContent=(data.limitations||[]).join(' · ');
-    $('#output').scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(err){$('#summary').textContent='SCAN FAILED';$('#err').textContent=err.message;}
-  finally{btn.disabled=false;}
-});
-/* ---------- public lookup ---------- */
+    for(const p of list){const row=document.createElement('tr');const svc=[p.service,p.product,p.version,...(p.scripts||[]).map(s=>s.id+': '+s.output)].filter(Boolean).join(' ')||'—';
+      for(const v of [p.port,p.protocol||'tcp',p.state,svc]){const c=document.createElement('td');c.textContent=v;if(typeof v==='string'&&['open','closed','filtered_or_timeout'].includes(v))c.className=v;row.append(c);}$('#portsbody').append(row);}
+    renderRiskbar(data.findings||[]);renderFindings($('#findings'),data.findings||[]);$('#limits').textContent=(data.limitations||[]).join(' · ');
+    $('#scanoutput').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(err){$('#summary').textContent='SCAN FAILED';$('#err').textContent=err.message;}finally{btn.disabled=false;}});
+/* ---------- lookup + tree ---------- */
 let latestReport=null;
 const SVGNS="http://www.w3.org/2000/svg";
 function svgEl(name,attrs){const n=document.createElementNS(SVGNS,name);for(const k in attrs)n.setAttribute(k,attrs[k]);return n;}
 function short(v,n=36){v=String(v);return v.length>n?v.slice(0,n-1)+'…':v;}
 function tn(label,value,children){return {label,value:(value===null||value===undefined||value==='')?null:value,children:children||[]};}
-function buildTree(type,query,res){
-  const kids=[];
+function buildTree(type,query,res){const kids=[];
   const push=(l,v,c)=>{if((v!==null&&v!==undefined&&v!=='')||(c&&c.length))kids.push(tn(l,v,c));};
   const list=(arr,limit=6)=>arr.slice(0,limit).map(x=>tn(short(x,40)));
   if(type==='email'){push('DOMAIN',res.domain);const mx=(res.mx_records||[]).map(m=>`${m.priority} ${m.host}`);
     if(mx.length)push('MX',mx.length+' record(s)',list(mx));push('SPF',res.mail_dns_policy?.spf?.status);push('DMARC',res.mail_dns_policy?.dmarc?.status);push('STATUS',res.status);}
   else if(type==='domain'){const rec=res.dns_records||{};
     for(const k of ['A','AAAA','MX','NS','TXT','CAA','SOA']){const v=rec[k];
-      if(Array.isArray(v)&&v.length){const vals=v.map(i=>typeof i==='object'?`${i.priority} ${i.host||'(null MX)'}`:String(i));
-        vals.length===1?push(k,short(vals[0],40)):push(k,vals.length+' records',list(vals));}}
-    const reg=res.registration||{};if(reg.status==='available')push('RDAP',reg.registrar||'registry',
-      [tn('Registered',reg.registered),tn('Expires',reg.expires),tn('Status',short((reg.registry_status||[]).join(', '),40))].filter(n=>n.value));
+      if(Array.isArray(v)&&v.length){const vals=v.map(i=>typeof i==='object'?`${i.priority} ${i.host||'(null MX)'}`:String(i));vals.length===1?push(k,short(vals[0],40)):push(k,vals.length+' records',list(vals));}}
+    const reg=res.registration||{};if(reg.status==='available')push('RDAP',reg.registrar||'registry',[tn('Registered',reg.registered),tn('Expires',reg.expires),tn('Status',short((reg.registry_status||[]).join(', '),40))].filter(n=>n.value));
     const ct=res.certificate_transparency;if(ct&&ct.status==='available')push('CT SUBDOMAINS',ct.unique_hostnames+' hosts',list(ct.hostnames||[],8));}
   else if(type==='ip'){const rdap=res.rdap||{};push('NETWORK',rdap.network_name||rdap.handle);
     if(rdap.start_address&&rdap.end_address)push('RANGE',`${rdap.start_address} – ${rdap.end_address}`);push('COUNTRY',rdap.country);
@@ -366,59 +429,37 @@ function buildTree(type,query,res){
   else if(type==='discord'){push('CREATED UTC',res.account_created_utc);push('AGE · DAYS',res.account_age_days);push('PROFILE',short(res.profile_url,40));
     const s=res.snowflake_metadata||{};if(s.worker_id!==undefined)push('SNOWFLAKE',`worker ${s.worker_id} · proc ${s.process_id}`);}
   if(!kids.length)kids.push(tn('RESULT','no public attributes'));
-  return tn(type.toUpperCase(),query,kids);
-}
-function renderGraph(type,query,res){
-  const host=$('#artifactgraph');host.replaceChildren();
-  const root=buildTree(type,query,res);
-  const ROW=40,COL=210,PADX=150,PADY=18;
-  let leaf=0,maxD=0;
-  (function assign(n,d){n.d=d;maxD=Math.max(maxD,d);
-    if(n.children.length){n.children.forEach(c=>assign(c,d+1));n.y=(n.children[0].y+n.children[n.children.length-1].y)/2;}
-    else{n.y=PADY+leaf*ROW+ROW/2;leaf++;}})(root,0);
-  const H=Math.max(PADY*2+leaf*ROW,120),W=PADX+maxD*COL+60;
-  const cx=n=>PADX+n.d*COL;
-  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:Math.min(W,Math.max(W,640)),height:H,style:`max-width:100%;height:auto;min-width:${Math.min(W,880)}px`});
-  const links=svgEl('g',{}),nodes=svgEl('g',{});svg.append(links,nodes);
-  let order=0;
-  (function walk(n){
-    const x=cx(n),y=n.y;
-    for(const c of n.children){const x2=cx(c),y2=c.y,dx=(x2-x)*.5;
-      const p=svgEl('path',{class:'glink',d:`M ${x} ${y} C ${x+dx} ${y}, ${x2-dx} ${y2}, ${x2} ${y2}`,pathLength:'1'});
-      p.style.animationDelay=(order*20)+'ms';links.append(p);}
-    const circle=svgEl('circle',{class:'gcircle'+(n.d===0?' root':''),cx:x,cy:y,r:n.d===0?6:5});
-    circle.style.animationDelay=(order*25)+'ms';nodes.append(circle);
-    const label=svgEl('text',{class:'glabel'+(n.d===0?' root':''),x:x-12,y:n.value?y-2:y+4,'text-anchor':'end'});
-    label.textContent=n.label;label.style.animationDelay=(order*25)+'ms';nodes.append(label);
-    if(n.value){const val=svgEl('text',{class:'gvalue',x:x-12,y:y+11,'text-anchor':'end'});
-      val.textContent=short(Array.isArray(n.value)?n.value.join(', '):n.value,38);val.style.animationDelay=(order*25)+'ms';nodes.append(val);}
-    order++;n.children.forEach(walk);
-  })(root);
-  host.append(svg);
-}
-$('#osintform').addEventListener('submit',async e=>{e.preventDefault();
-  const btn=$('#osintbtn');$('#osintresults').classList.add('show');
+  return tn(type.toUpperCase(),query,kids);}
+function renderGraph(type,query,res){const host=$('#artifactgraph');host.replaceChildren();const root=buildTree(type,query,res);
+  const ROW=40,COL=210,PADX=150,PADY=18;let leaf=0,maxD=0;
+  (function assign(n,d){n.d=d;maxD=Math.max(maxD,d);if(n.children.length){n.children.forEach(c=>assign(c,d+1));n.y=(n.children[0].y+n.children[n.children.length-1].y)/2;}else{n.y=PADY+leaf*ROW+ROW/2;leaf++;}})(root,0);
+  const H=Math.max(PADY*2+leaf*ROW,120),W=PADX+maxD*COL+60,cx=n=>PADX+n.d*COL;
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,style:`max-width:100%;height:auto;min-width:${Math.min(W,880)}px`});
+  const links=svgEl('g',{}),nodes=svgEl('g',{});svg.append(links,nodes);let order=0;
+  (function walk(n){const x=cx(n),y=n.y;
+    for(const c of n.children){const x2=cx(c),y2=c.y,dx=(x2-x)*.5;const p=svgEl('path',{class:'glink',d:`M ${x} ${y} C ${x+dx} ${y}, ${x2-dx} ${y2}, ${x2} ${y2}`,pathLength:'1'});p.style.animationDelay=(order*20)+'ms';links.append(p);}
+    const circle=svgEl('circle',{class:'gcircle'+(n.d===0?' root':''),cx:x,cy:y,r:n.d===0?6:5});circle.style.animationDelay=(order*25)+'ms';nodes.append(circle);
+    const label=svgEl('text',{class:'glabel'+(n.d===0?' root':''),x:x-12,y:n.value?y-2:y+4,'text-anchor':'end'});label.textContent=n.label;label.style.animationDelay=(order*25)+'ms';nodes.append(label);
+    if(n.value){const val=svgEl('text',{class:'gvalue',x:x-12,y:y+11,'text-anchor':'end'});val.textContent=short(Array.isArray(n.value)?n.value.join(', '):n.value,38);val.style.animationDelay=(order*25)+'ms';nodes.append(val);}
+    order++;n.children.forEach(walk);})(root);
+  host.append(svg);}
+$('#osintform').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#osintbtn');$('#osintresults').style.display='block';
   $('#osinterr').textContent='';$('#osintjson').textContent='';$('#artifactgraph').replaceChildren();$('#sourcetags').replaceChildren();
-  $('#emailresources').classList.remove('show');$('#discordresources').classList.remove('show');
-  $('#exportreport').disabled=true;latestReport=null;$('#osintsummary').textContent='LOOKUP IN PROGRESS …';btn.disabled=true;
-  try{
-    const r=await fetch('/osint',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#artifact').value.trim(),include_geo:$('#includegeo').checked,include_ct:$('#includect').checked})});
-    const data=await r.json();if(!r.ok)throw new Error(data.error||'Lookup failed');
-    latestReport={generated_at:new Date().toISOString(),...data};
-    $('#detectedtype').textContent=data.detected_type.toUpperCase();
-    $('#osintsummary').textContent=`${data.sources_queried.length} PUBLIC SOURCE CHECK(S) · ${data.query}`;
-    for(const s of data.sources_queried){const tag=document.createElement('span');tag.className='tag';tag.textContent=s;$('#sourcetags').append(tag);}
+  $('#emailresources').classList.remove('show');$('#discordresources').classList.remove('show');$('#exportreport').disabled=true;latestReport=null;
+  $('#osintsummary').textContent='LOOKUP IN PROGRESS …';btn.disabled=true;
+  try{const r=await fetch('/osint',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:$('#artifact').value.trim(),include_geo:$('#includegeo').checked,include_ct:$('#includect').checked})});
+    const data=await r.json();if(!r.ok)throw new Error(data.error||'Lookup failed');latestReport={generated_at:new Date().toISOString(),...data};
+    $('#detectedtype').textContent=data.detected_type.toUpperCase();$('#osintsummary').textContent=`${data.sources_queried.length} PUBLIC SOURCE CHECK(S) · ${data.query}`;
+    for(const s of data.sources_queried){const t=document.createElement('span');t.className='tag';t.textContent=s;$('#sourcetags').append(t);}
     renderGraph(data.detected_type,data.query,data.result);
     if(data.detected_type==='email')$('#emailresources').classList.add('show');
     if(data.detected_type==='discord')$('#discordresources').classList.add('show');
-    $('#osintjson').textContent=JSON.stringify({result:data.result,limitations:data.limitations},null,2);
-    $('#exportreport').disabled=false;
-  }catch(err){$('#osintsummary').textContent='LOOKUP FAILED';$('#osinterr').textContent=err.message;}
-  finally{btn.disabled=false;}
-});
-$('#exportreport').addEventListener('click',()=>{if(!latestReport)return;
-  const blob=new Blob([JSON.stringify(latestReport,null,2)],{type:'application/json'});
+    $('#osintjson').textContent=JSON.stringify({result:data.result,limitations:data.limitations},null,2);$('#exportreport').disabled=false;
+    pushRecent(data.query,data.detected_type);
+  }catch(err){$('#osintsummary').textContent='LOOKUP FAILED';$('#osinterr').textContent=err.message;}finally{btn.disabled=false;}});
+$('#exportreport').addEventListener('click',()=>{if(!latestReport)return;const blob=new Blob([JSON.stringify(latestReport,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`flmp-${latestReport.detected_type}-report.json`;a.click();URL.revokeObjectURL(url);});
+configureLookup('domain');
 </script>
 </body>
 </html>
