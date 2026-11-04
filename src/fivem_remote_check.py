@@ -512,12 +512,18 @@ def start_dashboard(bind: str, port: int) -> None:
         server.server_close()
 
 
+COLOR_NAMES = ("reset", "cyan", "green", "yellow", "red", "dim", "bold", "magenta", "blue", "gray")
+
+
 def terminal_style() -> dict[str, str]:
     if not sys.stdout.isatty() or "NO_COLOR" in os.environ:
-        return {name: "" for name in ("reset", "cyan", "green", "yellow", "red", "dim", "bold")}
+        return {name: "" for name in COLOR_NAMES}
+    if sys.platform == "win32":
+        os.system("")  # enable ANSI escape processing in legacy Windows consoles
     return {
-        "reset": "\033[0m", "cyan": "\033[96m", "green": "\033[92m",
-        "yellow": "\033[93m", "red": "\033[91m", "dim": "\033[2m", "bold": "\033[1m",
+        "reset": "\033[0m", "cyan": "\033[96m", "green": "\033[92m", "yellow": "\033[93m",
+        "red": "\033[91m", "dim": "\033[2m", "bold": "\033[1m", "magenta": "\033[95m",
+        "blue": "\033[94m", "gray": "\033[90m",
     }
 
 
@@ -711,15 +717,58 @@ def render_report(kind: str, result: dict[str, Any]) -> str:
 
 
 def print_banner(colors: dict[str, str]) -> None:
-    c, g, r, d = colors["cyan"], colors["green"], colors["reset"], colors["dim"]
-    print(f"{c}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-    print("┃  ███████╗██╗     ███╗   ███╗██████╗      SENTINEL // FiveM  ┃")
-    print("┃  ██╔════╝██║     ████╗ ████║██╔══██╗     NMAP SECURITY CLI  ┃")
-    print("┃  █████╗  ██║     ██╔████╔██║██████╔╝     ─────────────────  ┃")
-    print("┃  ██╔══╝  ██║     ██║╚██╔╝██║██╔═══╝      AUTHORIZED SCOPE  ┃")
-    print(f"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛{r}")
-    print(f"{d}TCP connect · light service detection · safe info scripts{r}")
-    print(f"{d}Made by plbct0 and {colors['bold']}sauceyC4{r}\n")
+    c, g, m, r, d, b = colors["cyan"], colors["green"], colors["magenta"], colors["reset"], colors["dim"], colors["bold"]
+    animate = sys.stdout.isatty()
+    logo = [
+        "███████╗██╗     ███╗   ███╗██████╗ ",
+        "██╔════╝██║     ████╗ ████║██╔══██╗",
+        "█████╗  ██║     ██╔████╔██║██████╔╝",
+        "██╔══╝  ██║     ██║╚██╔╝██║██╔═══╝ ",
+        "██║     ███████╗██║ ╚═╝ ██║██║     ",
+        "╚═╝     ╚══════╝╚═╝     ╚═╝╚═╝     ",
+    ]
+    tints = (colors["blue"], c, c, g, g, colors["green"])
+    print(f"{c}╔══════════════════════════════════════════════════════════╗{r}")
+    for line, tint in zip(logo, tints):
+        print(f"{c}║  {b}{tint}{line}{r}            {c}║{r}")
+        if animate:
+            sys.stdout.flush()
+            time.sleep(0.04)
+    print(f"{c}║{r}  {m}SENTINEL{r} {d}//{r} FiveM exposure & OSINT console {d}· local mode{r}  {c}  ║{r}")
+    print(f"{c}╚══════════════════════════════════════════════════════════╝{r}")
+    print(f"{d}  TCP connect · service detection · TLS/header checks · public OSINT{r}")
+    print(f"{d}  Made by plbct0 and {b}sauceyC4{r}{d} · authorized scope only{r}\n")
+
+
+def spinner(message: str, work, colors: dict[str, str]):
+    """Run work() while showing an animated spinner; return its result."""
+    if not sys.stdout.isatty():
+        return work()
+    frames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+    done = threading.Event()
+    box: dict[str, Any] = {}
+
+    def runner() -> None:
+        try:
+            box["result"] = work()
+        except BaseException as exc:  # re-raised on the main thread
+            box["error"] = exc
+        finally:
+            done.set()
+
+    thread = threading.Thread(target=runner)
+    thread.start()
+    index = 0
+    while not done.wait(0.08):
+        sys.stdout.write(f"\r{colors['cyan']}{frames[index % len(frames)]}{colors['reset']} {message} …")
+        sys.stdout.flush()
+        index += 1
+    thread.join()
+    sys.stdout.write("\r\033[2K")  # clear the spinner line
+    sys.stdout.flush()
+    if "error" in box:
+        raise box["error"]
+    return box.get("result")
 
 
 def print_welcome_screen(colors: dict[str, str]) -> None:
@@ -772,22 +821,49 @@ def run_menu() -> int:
     colors = terminal_style()
     g, y, c, r = colors["green"], colors["yellow"], colors["cyan"], colors["reset"]
     print_welcome_screen(colors)
+    d, m, b, bl = colors["dim"], colors["magenta"], colors["bold"], colors["blue"]
+    width = 58
+    groups = (
+        ("SERVER SECURITY", [
+            ("1", "Quick scan", "common FiveM / web TCP ports"),
+            ("2", "Custom ports", f"list or range, max. {MAX_PORTS}"),
+            ("3", "Config audit", "local server.cfg baseline"),
+            ("4", "Dashboard", "hacker-style browser UI (local)"),
+        ]),
+        ("NETWORK OSINT", [
+            ("5", "Email DNS", "MX / SPF / DMARC policy"),
+            ("6", "IP intel", "RDAP / reverse DNS / geo"),
+            ("8", "Domain intel", "DNS / RDAP / CT subdomains"),
+        ]),
+        ("LOCAL METADATA", [
+            ("7", "Discord ID", "Snowflake / profile metadata"),
+            ("9", "Username", "Discord handle format"),
+            ("10", "Phone", "offline numbering plan"),
+            ("11", "Display name", "Discord display-name format"),
+        ]),
+    )
+
+    def bar(plain: str, colored: str) -> str:
+        """Frame one inner row, padding by visible (uncolored) length."""
+        return f"{c}║{r} {colored}{' ' * max(0, width - 1 - len(plain))}{c}║{r}"
+
     while True:
-        print(f"{c}FLMP // MAIN MENU{r}")
-        nmap_path = shutil.which("nmap") or shutil.which("nmap.exe")
-        print(f"  Nmap: {g + 'ready' + r if nmap_path else y + 'not found' + r}")
-        print(f"\n{c}  [1]{r} Quick scan     common FiveM/Web TCP ports")
-        print(f"{c}  [2]{r} Custom ports   list or range, max. {MAX_PORTS}")
-        print(f"{c}  [3]{r} Config audit   local server.cfg")
-        print(f"{c}  [4]{r} 3D dashboard  browser UI on localhost")
-        print(f"{c}  [5]{r} Email OSINT   MX / SPF / DMARC DNS policy")
-        print(f"{c}  [6]{r} IP intelligence  RDAP / reverse DNS / optional geolocation")
-        print(f"{c}  [7]{r} Discord ID    Snowflake / mention / profile metadata")
-        print(f"{c}  [8]{r} Domain intel  DNS records / RDAP / optional CT subdomains")
-        print(f"{c}  [9]{r} Username check local Discord handle format only")
-        print(f"{c} [10]{r} Phone intel   offline numbering-plan metadata")
-        print(f"{c} [11]{r} Display name local Discord display-name format check")
-        print(f"{c}  [0]{r} Exit")
+        nmap_ready = bool(shutil.which("nmap") or shutil.which("nmap.exe"))
+        state_plain = "ready" if nmap_ready else "not found"
+        head_plain = "MAIN MENU"
+        head = f"{b}{m}MAIN MENU{r}{' ' * (width - 1 - len(head_plain) - 6 - len(state_plain))}{d}Nmap: {r}{(g if nmap_ready else y)}{state_plain}{r}"
+        print(f"{c}╔{'═' * width}╗{r}")
+        print(f"{c}║{r} {head}{c}║{r}")
+        for label, items in groups:
+            print(f"{c}╟{'─' * width}╢{r}")
+            print(bar(f"▸ {label}", f"{bl}▸ {label}{r}"))
+            for key, name, desc in items:
+                plain = f"[{key:>2}] {name:<13}{desc}"
+                colored = f"{c}[{key:>2}]{r} {g}{name:<13}{r}{d}{desc}{r}"
+                print(bar(plain, colored))
+        print(f"{c}╟{'─' * width}╢{r}")
+        print(bar("[ 0] Exit", f"{c}[ 0]{r} {y}Exit{r}"))
+        print(f"{c}╚{'═' * width}╝{r}")
         try:
             sys.stdout.flush()
             choice = input(f"\n{g}flmp>{r} ").strip()
@@ -813,11 +889,11 @@ def run_menu() -> int:
                 from larp_osint import check_discord_display_name, check_discord_id, check_discord_username, check_domain, check_email, check_ip, check_phone_number
                 if choice == "5":
                     value = input("Email address: ").strip()
-                    result = check_email(value)
+                    result = spinner("Resolving MX / SPF / DMARC", lambda: check_email(value), colors)
                 elif choice == "6":
                     value = input("Public IP address: ").strip()
                     include_geo = input("Also query approximate geolocation via ipwho.is? [y/N]: ").strip().lower() in {"y", "yes", "j", "ja"}
-                    result = check_ip(value, include_geo)
+                    result = spinner("Querying RDAP / reverse DNS", lambda: check_ip(value, include_geo), colors)
                 elif choice == "7":
                     value = input("Discord ID, mention, or profile URL: ").strip()
                     result = check_discord_id(value)
@@ -833,7 +909,7 @@ def run_menu() -> int:
                 else:
                     value = input("Domain name: ").strip()
                     include_ct = input("Also list subdomains from certificate transparency logs (crt.sh)? [y/N]: ").strip().lower() in {"y", "yes", "j", "ja"}
-                    result = check_domain(value, include_ct)
+                    result = spinner("Querying DNS / RDAP" + (" / crt.sh" if include_ct else ""), lambda: check_domain(value, include_ct), colors)
                 kind = {"5": "email", "6": "ip", "7": "discord", "8": "domain", "9": "username", "10": "phone", "11": "display-name"}[choice]
                 print(render_report(kind, result))
                 input("\nPress Enter for menu …")
@@ -856,7 +932,17 @@ def run_menu() -> int:
             return 0
 
 
+def enable_utf8_output() -> None:
+    """Render box-drawing and spinner glyphs on Windows consoles and when piped."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main() -> int:
+    enable_utf8_output()
     parser = argparse.ArgumentParser(prog="flmp", description="Nmap and OSINT checks for user-supplied targets.")
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("menu", help="open the interactive terminal menu")
