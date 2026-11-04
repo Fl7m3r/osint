@@ -20,3 +20,10 @@ Thumbs.db
 # Local scan artifacts
 flmp-*.xml
 flmp-*-report.json
+
+# Promo video: keep the composition, not the media or build output
+flmp-promo/*.mp3
+flmp-promo/renders/
+flmp-promo/.hyperframes/
+flmp-promo/beats/
+flmp-promo/node_modules/

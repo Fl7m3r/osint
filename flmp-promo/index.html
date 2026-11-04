@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "FLMP Mono"; src: url("assets/fonts/JetBrainsMonoNLNerdFont-Regular.ttf") format("truetype"); font-weight: 400; }
+      @font-face { font-family: "FLMP Mono"; src: url("assets/fonts/JetBrainsMonoNLNerdFont-Bold.ttf") format("truetype"); font-weight: 700; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+      body { font-family: "FLMP Mono", Consolas, monospace; color: #d6f3ec; }
+      .clip { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+      .rv { opacity: 0; }
+      .ch { display: none; }
+
+      /* ---------- background ---------- */
+      #bg { background: radial-gradient(ellipse at 50% 40%, #0b2a2d 0%, #051012 45%, #010304 100%); opacity: 0; overflow: hidden; }
+      #grid { position: absolute; left: -200px; right: -200px; top: 300px; height: 3200px;
+        background-image: linear-gradient(#47f5d018 1px, transparent 1px), linear-gradient(90deg, #47f5d018 1px, transparent 1px);
+        background-size: 46px 46px; transform-origin: 50% 0; }
+      #gridwrap { position: absolute; inset: 0; transform: perspective(700px) rotateX(62deg); transform-origin: 50% 100%; opacity: .55; }
+      .rain { position: absolute; top: -1400px; width: 30px; font-size: 15px; line-height: 19px; color: #5effc6; opacity: .14; white-space: pre; text-align: center; }
+      #pulse { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 55%, #45ffd255 0%, transparent 60%); opacity: 0; }
+      #scan { position: absolute; inset: 0; background: repeating-linear-gradient(#0000 0 3px, #00000038 3px 4px); }
+      #vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, #000c 100%); }
+
+      /* ---------- terminal (scene 1) ---------- */
+      #term { position: absolute; left: 210px; top: 110px; width: 1500px; height: 860px; border-radius: 10px; overflow: hidden;
+        background: #161824f2; box-shadow: 0 30px 90px #000d, 0 0 0 1px #2c2f42, 0 0 60px #45ffd214; opacity: 0; transform-origin: 30% 82%; }
+      .wt-bar { height: 44px; background: #1d1f2c; display: flex; align-items: center; font-size: 15px; color: #cdd6f4; }
+      .wt-tab { display: flex; align-items: center; gap: 10px; height: 34px; margin: 10px 0 0 10px; padding: 0 16px; background: #161824; border-radius: 8px 8px 0 0; min-width: 230px; }
+      .wt-tab .x { margin-left: auto; color: #8a8fa8; }
+      .wt-plus { margin-left: 16px; color: #8a8fa8; font-size: 20px; } .wt-dd { margin-left: 14px; color: #8a8fa8; }
+      .wt-ctl { margin-left: auto; display: flex; gap: 38px; padding-right: 24px; color: #cdd6f4; font-size: 16px; }
+      .tbody { position: relative; padding: 16px 26px; font-size: 20px; line-height: 27px; white-space: pre; color: #cdd6f4; }
+      .phase { position: absolute; left: 26px; top: 16px; right: 26px; }
+      .ff { display: flex; gap: 46px; margin-top: 6px; }
+      .arch { color: #89b4fa; font-size: 19px; line-height: 25px; }
+      .info { padding-top: 2px; }
+      .info .hd { color: #cdd6f4; font-weight: 700; margin-bottom: 8px; }
+      .info .r span.k { color: #cba6f7; display: inline-block; width: 120px; }
+      .info .y { color: #f9e2af; }
+      .dots { margin-top: 14px; letter-spacing: 6px; }
+      .pill { display: inline-flex; align-items: center; height: 27px; }
+      .seg1 { background: #cba6f7; color: #1e1e2e; padding: 0 10px 0 8px; font-weight: 700; }
+      .a1 { color: #cba6f7; background: #89b4fa; } .seg2 { background: #89b4fa; color: #1e1e2e; padding: 0 10px 0 6px; } .a2 { color: #89b4fa; }
+      .cap0 { color: #cba6f7; }
+      .caret { display: inline-block; width: 11px; height: 23px; background: #cdd6f4; vertical-align: -4px; }
+      .bl1 { color: #74c7ec; } .bl2 { color: #39d6ff; } .gr { color: #5effc6; } .mg { color: #f5a8ff; font-weight: 700; } .dm { color: #9399b2; } .yl { color: #f9e2af; } .bb { font-weight: 700; } .bu { color: #89b4fa; }
+      .art { position: absolute; right: 30px; top: 6px; color: #5effc6; font-size: 15px; line-height: 17px; }
+      .prog { margin-top: 18px; color: #5effc6; }
+      .pbar { display: inline-block; width: 300px; height: 18px; border: 1px solid #5effc6; vertical-align: -3px; margin: 0 12px; position: relative; }
+      .pbar i { position: absolute; inset: 2px; background: #5effc6; transform: scaleX(0); transform-origin: 0 50%; }
+      .stack { display: inline-block; position: relative; width: 60px; height: 27px; vertical-align: top; }
+      .stack b { position: absolute; left: 0; top: 0; font-weight: 400; opacity: 0; }
+
+      /* ---------- browser (scene 2) ---------- */
+      #cam2 { position: absolute; inset: 0; transform-origin: 1085px 832px; }
+      #browser { position: absolute; left: 100px; top: 60px; width: 1720px; height: 960px; border-radius: 10px; overflow: hidden; background: #050c0d;
+        box-shadow: 0 30px 100px #000e, 0 0 0 1px #2a2a2a, 0 0 80px #45ffd218; opacity: 0; }
+      .cr-tabs { height: 42px; background: #1f1f1f; display: flex; align-items: flex-end; padding-left: 12px; font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; color: #e8eaed; }
+      .cr-tab { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 14px; width: 290px; background: #353535; border-radius: 9px 9px 0 0; }
+      .cr-tab .fav { width: 16px; height: 16px; border: 1px solid #5effc6; color: #5effc6; font-size: 10px; display: grid; place-items: center; font-family: "FLMP Mono"; }
+      .cr-tab .x { margin-left: auto; color: #aaa; }
+      .cr-bar { height: 46px; background: #353535; display: flex; align-items: center; gap: 20px; padding: 0 16px; color: #c4c7c5; font-family: "Segoe UI", Arial, sans-serif; font-size: 18px; border-bottom: 1px solid #111; }
+      .omni { flex: 1; height: 32px; border-radius: 16px; background: #282828; display: flex; align-items: center; padding: 0 16px; gap: 12px; font-size: 15px; color: #e8eaed; }
+      .omni .dim { color: #9aa0a6; }
+      #content { position: absolute; left: 0; top: 88px; width: 1720px; height: 872px; overflow: hidden; background: radial-gradient(ellipse at 70% -10%, #0c2a2d 0, #050c0d 55%); }
+      #side { position: absolute; left: 0; top: 0; width: 250px; height: 872px; background: linear-gradient(180deg, #07110f, #050a0b); border-right: 1px solid #143339; }
+      .brand { height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid #143339; font-size: 15px; letter-spacing: .14em; font-weight: 700; }
+      .logo { width: 34px; height: 34px; border: 1px solid #5effc6; color: #5effc6; display: grid; place-items: center; box-shadow: 0 0 16px #45ffd244; }
+      .navsec { position: absolute; left: 14px; font-size: 10px; letter-spacing: .2em; color: #8aa8aa; }
+      .nav { position: absolute; left: 8px; width: 234px; height: 36px; display: flex; align-items: center; gap: 12px; padding: 0 12px; font-size: 13.5px; color: #9fbdbb; }
+      .nav i { font-style: normal; width: 18px; text-align: center; color: #97b5b6; }
+      .nav .tg { margin-left: auto; font-size: 9px; padding: 2px 5px; border: 1px solid #244f46; color: #5effc6; }
+      #navHL { position: absolute; left: 8px; top: 104px; width: 234px; height: 36px; background: linear-gradient(90deg, #0f2a28, #0b1a1c); border: 1px solid #1d4b52; box-shadow: inset 3px 0 0 #5effc6; }
+      .sfoot { position: absolute; left: 0; bottom: 0; width: 250px; padding: 14px 16px; border-top: 1px solid #143339; font-size: 11px; color: #8aa8aa; }
+      .sfoot .st { color: #5effc6; }
+      .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #5effc6; box-shadow: 0 0 10px #5effc6; margin-right: 8px; }
+      #main { position: absolute; left: 250px; top: 0; width: 1470px; height: 872px; }
+      .topbar { position: absolute; left: 0; top: 0; width: 1470px; height: 60px; border-bottom: 1px solid #143339; background: #050d0ecc; }
+      .ttl { position: absolute; left: 26px; top: 9px; font-size: 17px; letter-spacing: .12em; }
+      .ttl small { display: block; font-size: 11px; color: #97b5b6; letter-spacing: .1em; margin-top: 2px; }
+      .chips { position: absolute; right: 22px; top: 14px; display: flex; gap: 10px; }
+      .chip { font-size: 11px; letter-spacing: .1em; color: #97b5b6; border: 1px solid #1d4b52; padding: 6px 10px; }
+      .chip b { color: #5effc6; }
+      .view { position: absolute; left: 0; top: 60px; width: 1470px; height: 812px; overflow: hidden; opacity: 0; }
+      .panel { position: absolute; border: 1px solid #143339; background: linear-gradient(145deg, #0a171bf2, #070f12ee); }
+      .ph { height: 46px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; border-bottom: 1px solid #143339; color: #39d6ff; font-size: 12px; letter-spacing: .13em; }
+      .tag { font-size: 10.5px; padding: 3px 8px; border: 1px solid #256462; color: #5effc6; letter-spacing: .07em; }
+      .tag.off { border-color: #5a3a46; color: #ff93ac; }
+      .lbl { position: absolute; font-size: 12px; letter-spacing: .1em; color: #97b5b6; }
+      .inp { position: absolute; height: 48px; background: #03090b; border: 1px solid #1b4147; color: #5effc6; font-size: 17px; padding: 0 14px; display: flex; align-items: center; white-space: pre; }
+      .cb { position: absolute; display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: #9cbab8; }
+      .cb .bx { width: 18px; height: 18px; border: 1px solid #39e9bb; position: relative; }
+      .cb .bx b { position: absolute; inset: 2px; background: #39e9bb; opacity: 0; }
+      .btn { position: absolute; height: 50px; background: linear-gradient(105deg, #5effc6, #39d6ff); color: #00120f; font-weight: 700; font-size: 14px; letter-spacing: .16em;
+        display: grid; place-items: center; box-shadow: 0 0 24px #54ffd533; clip-path: polygon(0 0, 97% 0, 100% 24%, 100% 100%, 3% 100%, 0 76%); }
+      .fine { position: absolute; font-size: 12px; color: #92adad; }
+      .hero { position: absolute; left: 26px; top: 22px; width: 1418px; height: 150px; border: 1px solid #143339; background: linear-gradient(120deg, #0b1c1fee, #081213ee); padding: 22px 26px; }
+      .hero .eb { color: #39d6ff; letter-spacing: .24em; font-size: 11px; }
+      .hero h2 { font-size: 32px; margin: 10px 0 8px; white-space: pre; }
+      .hero h2 .ac { color: #5effc6; text-shadow: 0 0 20px #45ffd255; } .hero h2 .ty { color: #39d6ff; }
+      .hero p { color: #9fc0be; font-size: 14px; }
+      .stat { position: absolute; top: 192px; width: 345px; height: 104px; border: 1px solid #143339; background: #0b171a; padding: 15px 18px; }
+      .stat .k { color: #97b5b6; font-size: 11px; letter-spacing: .14em; } .stat .v { font-size: 28px; color: #5effc6; margin-top: 8px; } .stat .s { color: #8aa8aa; font-size: 11.5px; }
+      .seclab { position: absolute; left: 26px; color: #39d6ff; letter-spacing: .18em; font-size: 12px; }
+      .tool { position: absolute; width: 345px; height: 118px; border: 1px solid #143339; background: linear-gradient(150deg, #0b1a1dee, #070f11ee); padding: 15px 16px; }
+      .tool .ic { color: #5effc6; font-size: 18px; } .tool h4 { font-size: 14px; margin: 8px 0 5px; } .tool p { color: #97b5b6; font-size: 12px; line-height: 1.45; }
+      .tool .go { position: absolute; right: 14px; top: 14px; color: #1d4b52; }
+      .rec { position: absolute; left: 26px; width: 1418px; height: 36px; border: 1px solid #143339; background: #081315; display: flex; justify-content: space-between; align-items: center; padding: 0 14px; font-size: 13px; color: #97b5b6; }
+      .rec b { color: #5effc6; font-weight: 400; }
+      .graph { position: absolute; border: 1px solid #17383d; background: radial-gradient(ellipse at 22% 50%, #0b2528, #03090b 80%); overflow: hidden; }
+      .graph svg { position: absolute; left: 0; top: 0; }
+      .lk { fill: none; stroke: #2f8079; stroke-width: 1.6; stroke-dasharray: 1; stroke-dashoffset: 1; }
+      .nd { fill: #06181b; stroke: #5effc6; stroke-width: 2; opacity: 0; }
+      .nd.root { stroke: #39d6ff; fill: #07222b; }
+      .gl { fill: #d6f3ec; font: 700 14px "FLMP Mono"; opacity: 0; } .gl.root { fill: #39d6ff; }
+      .gv { fill: #a3c8c3; font: 13px "FLMP Mono"; opacity: 0; }
+      .srcs { position: absolute; display: flex; gap: 8px; }
+      .sum { position: absolute; color: #5effc6; letter-spacing: .12em; font-size: 15px; font-weight: 700; }
+      .pop { position: absolute; width: 330px; background: #07171a; border: 1px solid #1d4b52; box-shadow: 0 12px 32px #000b, 0 0 18px #35ffd522; padding: 13px 15px; font-size: 13.5px; opacity: 0; }
+      .pop h5 { color: #5effc6; font-size: 12px; letter-spacing: .1em; margin-bottom: 7px; } .pop .v { color: #c6e6de; } .pop .h { color: #8aa8aa; font-size: 11px; margin-top: 8px; }
+      .radar { position: absolute; width: 230px; height: 230px; opacity: 0; }
+      .radar .rg { position: absolute; border: 1px solid #5effc633; border-radius: 50%; }
+      .radar .sw { position: absolute; left: 115px; top: 0; width: 115px; height: 115px; transform-origin: 0 100%; background: conic-gradient(from 0deg at 0 100%, #5effc655, transparent 70deg); }
+      .radar .bp { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #5effc6; box-shadow: 0 0 10px #5effc6; }
+      .radar .lab { position: absolute; left: 0; right: 0; bottom: -26px; text-align: center; font-size: 11px; color: #5effc6; letter-spacing: .14em; }
+      table { position: absolute; border-collapse: collapse; font-size: 14px; }
+      th, td { text-align: left; padding: 0 14px; height: 33px; border-bottom: 1px solid #142d31; }
+      th { color: #97b5b6; font-weight: 400; letter-spacing: .07em; height: 34px; }
+      td.op { color: #5effc6; } td.fi { color: #ffcf6b; }
+      .risk { position: absolute; display: flex; gap: 10px; }
+      .rp { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid #1d4b52; font-size: 12px; letter-spacing: .08em; opacity: 0; }
+      .rp b { font-size: 17px; } .rp.h { border-color: #5a2434; color: #ff5e86; } .rp.r { border-color: #5a4a24; color: #ffcf6b; } .rp.i { border-color: #24455a; color: #39d6ff; }
+      .fd { position: absolute; left: 20px; width: 1376px; height: 86px; padding: 10px 14px; border-left: 3px solid #ffcf6b; background: #0d1719; opacity: 0; }
+      .fd.H { border-color: #ff5e86; background: #1a0e13; } .fd .t { font-weight: 700; font-size: 14.5px; } .fd.H .t { color: #ff5e86; }
+      .fd .d { color: #a9c7c3; font-size: 13px; margin-top: 3px; }
+      .fd .f { margin-top: 6px; padding: 4px 10px; border: 1px dashed #2b6b5f; background: #06130f; color: #5effc6; font-size: 13px; }
+      .nbar { position: absolute; height: 20px; border: 1px solid #5effc6; } .nbar i { position: absolute; inset: 3px; background: linear-gradient(90deg, #5effc6, #39d6ff); transform: scaleX(0); transform-origin: 0 50%; }
+      #cursor { position: absolute; left: 0; top: 0; width: 28px; height: 28px; opacity: 0; filter: drop-shadow(0 2px 4px #000c); }
+      #ripple { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; border: 2px solid #5effc6; opacity: 0; transform: scale(.2); }
+      #dim { position: absolute; inset: 0; background: #010506; opacity: 0; }
+      .card { position: absolute; width: 760px; height: 400px; border: 1px solid #1d4b52; background: linear-gradient(150deg, #0a1a1df5, #060e10f5); box-shadow: 0 24px 60px #000c, 0 0 28px #35ffd51c; opacity: 0; }
+      .card .ph { height: 50px; font-size: 13px; }
+      .glitch { position: absolute; left: 0; width: 1920px; background: #5effc6; mix-blend-mode: screen; opacity: 0; }
+
+      /* ---------- outro (scene 3) ---------- */
+      #outro { background: transparent; }
+      .big { position: absolute; left: 0; right: 0; top: 230px; text-align: center; font-size: 46px; line-height: 50px; white-space: pre; font-weight: 700; }
+      .big div { opacity: 0; }
+      .sub { position: absolute; left: 0; right: 0; top: 590px; text-align: center; font-size: 26px; letter-spacing: .12em; white-space: pre; }
+      .word { position: absolute; left: 0; right: 0; top: 660px; text-align: center; font-size: 66px; font-weight: 700; color: #5effc6; text-shadow: 0 0 30px #45ffd277; opacity: 0; letter-spacing: .04em; }
+      .tagline { position: absolute; left: 0; right: 0; top: 780px; text-align: center; font-size: 30px; white-space: pre; }
+      .credits { position: absolute; left: 0; right: 0; top: 860px; display: flex; justify-content: center; gap: 22px; font-size: 18px; color: #97b5b6; }
+      .credits > * { opacity: 0; }
+      .cmd { border: 1px solid #1d4b52; background: #071416; padding: 8px 16px; color: #5effc6; }
+      #flash { background: #e9fff8; opacity: 0; }
+      #black { background: #000; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="49.27" data-width="1920" data-height="1080">
+
+      <audio id="music" src="You%20Could%20Be%20The%20One.mp3" data-timeline-role="music"
+             data-start="0" data-duration="49.27" data-track-index="9" data-volume="0.9" data-fade-out="2.5"></audio>
+
+      <!-- ======================= BACKGROUND ======================= -->
+      <div id="bg" class="clip" data-start="0" data-duration="49.27" data-track-index="0">
+        <div id="gridwrap"><div id="grid"></div></div>
+        <div id="rainbox" data-layout-allow-occlusion></div>
+        <div id="pulse"></div>
+        <div id="scan"></div>
+        <div id="vig"></div>
+      </div>
+
+      <!-- ======================= SCENE 1 · ARCH TERMINAL ======================= -->
+      <div id="s1" class="clip" data-start="0" data-duration="12.95" data-track-index="1">
+        <div id="term">
+          <div class="wt-bar">
+            <div class="wt-tab"><span style="color:#5aa9ff">&#xE86C;</span> PowerShell <span class="x">✕</span></div>
+            <span class="wt-plus">+</span><span class="wt-dd">⌄</span>
+            <div class="wt-ctl"><span>─</span><span>☐</span><span>✕</span></div>
+          </div>
+          <div class="tbody">
+            <!-- phase A: fastfetch + prompt -->
+            <div class="phase" id="pA">
+              <div id="psver" class="rv">PowerShell 7.6.9</div>
+              <div class="ff">
+                <div class="arch" id="archlogo"></div>
+                <div class="info">
+                  <div class="hd" id="ffhd"></div>
+                  <div id="ffrows"></div>
+                  <div class="dots" id="ffdots"></div>
+                </div>
+              </div>
+              <div id="loadline" style="margin-top:8px"></div>
+              <div id="prompt" class="rv" style="margin-top:2px">
+                <span class="pill"><span class="seg1">&#xF303;  disof@arch</span><span class="a1">&#xE0B0;</span><span class="seg2">&#xF07B; ~</span><span class="a2">&#xE0B0;</span></span>
+                <div><span class="cap0">❯ </span><span id="cmd1"></span><span class="caret" id="caret1"></span></div>
+              </div>
+            </div>
+            <!-- phase B: FLMP splash -->
+            <div class="phase rv" id="pB">
+              <div id="banner"></div>
+              <div class="prog rv" id="prog">STARTING FLMP <span class="pbar"><i id="pbarfill"></i></span><span class="stack" id="pct"></span></div>
+              <div class="art" id="art"></div>
+            </div>
+            <!-- phase C: main menu -->
+            <div class="phase rv" id="pC">
+              <div id="menu"></div>
+              <div id="mprompt" class="rv" style="margin-top:27px"><span class="gr">flmp&gt;</span> <span id="cmd2"></span><span class="caret" id="caret2"></span></div>
+              <div id="runline"></div>
+              <div id="ctrlc" class="rv">Press Ctrl+C to stop.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================= SCENE 2 · DASHBOARD ======================= -->
+      <div id="s2" class="clip" data-start="12.6" data-duration="25.2" data-track-index="2">
+        <div id="cam2">
+          <div id="browser">
+            <div class="cr-tabs"><div class="cr-tab"><span class="fav">F</span>FLMP // FiveM Security Console<span class="x">✕</span></div><span style="margin:0 0 8px 14px;color:#aaa;font-size:20px">+</span></div>
+            <div class="cr-bar"><span>←</span><span>→</span><span>⟳</span><div class="omni"><span class="dim">ⓘ</span><span>127.0.0.1<span class="dim">:8765</span></span></div><span>☆</span><span>⋮</span></div>
+            <div id="content">
+              <!-- sidebar -->
+              <div id="side">
+                <div class="brand"><div class="logo">F</div>FLMP <span style="color:#5effc6">//</span> SENTINEL</div>
+                <div id="navHL"></div>
+                <div class="navsec" style="top:80px">SECURITY WORKSPACE</div>
+                <div class="nav" style="top:104px"><i>▦</i>Dashboard</div>
+                <div class="nav" style="top:144px"><i>◈</i>Server Scan<span class="tg">NMAP</span></div>
+                <div class="nav" style="top:184px"><i>⬡</i>Domain Intel</div>
+                <div class="nav" style="top:224px"><i>◉</i>IP Info</div>
+                <div class="nav" style="top:264px"><i>✉</i>Email DNS</div>
+                <div class="navsec" style="top:316px">LOCAL METADATA</div>
+                <div class="nav" style="top:340px"><i>❖</i>Discord ID</div>
+                <div class="nav" style="top:380px"><i>☎</i>Phone</div>
+                <div class="nav" style="top:420px"><i>@</i>Username</div>
+                <div class="navsec" style="top:472px">SYSTEM</div>
+                <div class="nav" style="top:496px"><i>⚖</i>Scope &amp; Ethics</div>
+                <div class="sfoot"><div class="st"><span class="dot"></span>LOCAL · 127.0.0.1</div><div style="margin-top:6px">Made by plbct0 &amp; <b style="color:#5effc6">sauceyC4</b></div></div>
+              </div>
+              <!-- main -->
+              <div id="main">
+                <div class="topbar">
+                  <div class="ttl" id="t-dash">Dashboard<small>FLMP · overview</small></div>
+                  <div class="ttl rv" id="t-ip">IP Info<small>FLMP · public OSINT</small></div>
+                  <div class="ttl rv" id="t-scan">Server Scan<small>FLMP · vulnerability exposure</small></div>
+                  <div class="chips"><span class="chip"><span class="dot"></span>ONLINE</span><span class="chip">ENGINE <b>NMAP</b></span><span class="chip">DATA <b>NOT STORED</b></span></div>
+                </div>
+
+                <!-- ===== dashboard view ===== -->
+                <div class="view" id="v-dash" style="opacity:1">
+                  <div class="hero"><div class="eb">AUTHORIZED SECURITY &amp; EXPOSURE ANALYSIS</div>
+                    <h2>Map the attack surface. <span class="ac">Find the holes.</span> <span class="ty" id="heroword"></span></h2>
+                    <p>Low-impact Nmap recon plus public technical metadata for assets <b style="color:#5effc6">you are authorized to test</b>. Every finding ships with a fix.</p></div>
+                  <div class="stat rv" style="left:26px"><div class="k">MODULES</div><div class="v">8</div><div class="s">scan + public OSINT</div></div>
+                  <div class="stat rv" style="left:383px"><div class="k">SCAN ENGINE</div><div class="v" style="font-size:22px;margin-top:12px">Nmap · T2</div><div class="s">connect + light detect</div></div>
+                  <div class="stat rv" style="left:740px"><div class="k">EXPOSURE RULES</div><div class="v">9</div><div class="s">services with fix advice</div></div>
+                  <div class="stat rv" style="left:1097px"><div class="k">DATA STORED</div><div class="v" style="font-size:22px;margin-top:12px">None</div><div class="s">local, nothing saved</div></div>
+                  <div class="seclab" style="top:318px">// TOOLS · PUBLIC-DATA OR AUTHORIZED-TARGET ONLY</div>
+                  <div id="tools"></div>
+                  <div class="seclab" style="top:618px">// RECENT LOOKUPS · THIS BROWSER ONLY</div>
+                  <div class="rec rv" style="top:646px"><span>demo-hosting.example</span><b>DOMAIN</b></div>
+                  <div class="rec rv" style="top:690px"><span>ops@demo-hosting.example</span><b>EMAIL</b></div>
+                </div>
+
+                <!-- ===== IP view ===== -->
+                <div class="view" id="v-ip">
+                  <div class="panel" style="left:26px;top:22px;width:1418px;height:270px">
+                    <div class="ph"><span>IP INFO</span><span class="tag">PUBLIC SOURCES ONLY</span></div>
+                    <div class="lbl" style="left:20px;top:68px">PUBLIC IP ADDRESS</div>
+                    <div class="inp" id="ipinp" style="left:20px;top:90px;width:1376px"><span id="iptxt"></span><span class="caret rv" id="caret3" style="height:20px;width:9px;background:#5effc6"></span></div>
+                    <div class="cb" style="left:20px;top:152px"><span class="bx"><b id="geochk"></b></span>IP geolocation (sends the IP to ipwho.is)</div>
+                    <div class="btn" id="ipbtn" style="left:20px;top:188px;width:1376px">▶ &nbsp; RUN LOOKUP</div>
+                    <div class="fine" style="left:20px;top:246px">RDAP network and reverse DNS. Geolocation is optional.</div>
+                  </div>
+                  <div class="panel rv" id="ipres" style="left:26px;top:310px;width:1418px;height:494px">
+                    <div class="ph"><span>PUBLIC INTELLIGENCE REPORT</span><span class="tag">IP</span></div>
+                    <div class="sum" id="ipsum1" style="left:20px;top:62px">LOOKUP IN PROGRESS …</div>
+                    <div class="sum rv" id="ipsum2" style="left:20px;top:62px">3 PUBLIC SOURCE CHECK(S) · 203.0.113.42</div>
+                    <div class="srcs rv" id="ipsrc" style="left:20px;top:94px"><span class="tag">RDAP</span><span class="tag">Reverse DNS PTR</span><span class="tag">ipwho.is</span></div>
+                    <div class="lbl" style="left:20px;top:134px;font-size:11px">RELATIONSHIP VIEW · PUBLIC ATTRIBUTES ONLY</div>
+                    <div class="graph" id="ipgraph" style="left:20px;top:156px;width:1376px;height:322px"></div>
+                  </div>
+                </div>
+
+                <!-- ===== scan view ===== -->
+                <div class="view" id="v-scan">
+                  <div id="scanInner" style="position:absolute;left:0;top:0;width:1470px;height:1400px">
+                    <div class="panel" style="left:26px;top:22px;width:1418px;height:330px">
+                      <div class="ph"><span>SERVER SCAN · VULNERABILITY EXPOSURE</span><span class="tag">NMAP · T2 · SAFE INFO</span></div>
+                      <div class="lbl" style="left:20px;top:68px">SERVER IP (IPv4 / IPv6)</div>
+                      <div class="inp" style="left:20px;top:90px;width:860px"><span id="sciptxt"></span></div>
+                      <div class="lbl" style="left:20px;top:150px">TCP PORTS / RANGES · MAX. 1024</div>
+                      <div class="inp" style="left:20px;top:172px;width:700px">22,80,443,3306,6379,30120,40120</div>
+                      <div class="lbl" style="left:740px;top:150px">PROFILE</div>
+                      <div class="inp" style="left:740px;top:172px;width:140px;color:#97b5b6">T2 · LIGHT</div>
+                      <div class="cb" style="left:20px;top:234px"><span class="bx"><b id="authchk"></b></span>I confirm this server IP is <b style="color:#5effc6">&nbsp;explicitly authorized&nbsp;</b> for this check.</div>
+                      <div class="btn" id="scanbtn" style="left:20px;top:266px;width:860px">▶ &nbsp; START VULNERABILITY SCAN</div>
+                      <div style="position:absolute;left:930px;top:66px;width:466px;font-size:13.5px;color:#9fbdbb">
+                        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #143034">TCP connect scan<b style="color:#5effc6">●</b></div>
+                        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #143034">Service / version<b style="color:#5effc6">●</b></div>
+                        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #143034">TLS cert + headers<b style="color:#5effc6">●</b></div>
+                        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #143034">Exposed-service rules<b style="color:#5effc6">●</b></div>
+                        <div style="display:flex;justify-content:space-between;padding:9px 0">Exploit / brute-force<span class="tag off">DISABLED</span></div>
+                      </div>
+                    </div>
+                    <div class="panel rv" id="scanres" style="left:26px;top:372px;width:1418px;height:960px">
+                      <div class="ph"><span>SCAN REPORT</span><span class="tag">203.0.113.42</span></div>
+                      <div class="sum" id="scsum1" style="left:20px;top:62px">SCAN IN PROGRESS …</div>
+                      <div class="sum rv" id="scsum2" style="left:20px;top:62px">6 OPEN · 7 PORTS · 7 FINDINGS</div>
+                      <div id="nmapline" class="rv" style="position:absolute;left:20px;top:100px;font-size:14px;color:#9fbdbb">Nmap <span class="nbar" style="position:relative;display:inline-block;width:620px;vertical-align:-5px;margin:0 12px"><i id="nfill"></i></span><span class="stack" id="npct" style="height:20px"></span></div>
+                      <div class="risk" style="left:20px;top:96px"><div class="rp h"><b>3</b>CRITICAL / HIGH</div><div class="rp r"><b>2</b>REVIEW</div><div class="rp i"><b>2</b>INFO</div></div>
+                      <table id="ports" style="left:20px;top:146px;width:1376px"></table>
+                      <div class="lbl" style="left:20px;top:440px;font-size:11px">FINDINGS &amp; FIXES</div>
+                      <div id="finds"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <svg id="cursor" viewBox="0 0 28 28"><path d="M3 2 L3 22 L8.5 17 L12.5 26 L16 24.5 L12 15.8 L19.5 15.8 Z" fill="#f2fffb" stroke="#03100d" stroke-width="1.4"/><circle id="ripple-dummy" cx="0" cy="0" r="0"/></svg>
+              <div id="ripple"></div>
+              <div id="pop" class="pop" data-layout-allow-occlusion><h5>ASN / ISP</h5><div class="v">64500 · Demo Hosting GmbH</div><div class="v" style="color:#a3c8c3;margin-top:4px">AS64500 is a documentation ASN (RFC 5398)</div><div class="h">Leaf attribute · click ✕ to close</div></div>
+            </div>
+          </div>
+          <div id="dim" data-layout-allow-occlusion></div>
+          <div id="cards" data-layout-allow-occlusion></div>
+        </div>
+        <div class="glitch" id="g1" style="top:210px;height:16px"></div>
+        <div class="glitch" id="g2" style="top:560px;height:40px"></div>
+        <div class="glitch" id="g3" style="top:810px;height:8px"></div>
+      </div>
+
+      <!-- ======================= SCENE 3 · OUTRO ======================= -->
+      <div id="s3" class="clip" data-start="37.4" data-duration="11.87" data-track-index="3">
+        <div id="outro" class="clip">
+          <div class="big" id="biglogo"></div>
+          <div class="sub" id="subline"></div>
+          <div class="word" id="w0">RECON.</div>
+          <div class="word" id="w1">EXPOSURE.</div>
+          <div class="word" id="w2">HARDENING.</div>
+          <div class="word" id="w3">PUBLIC OSINT.</div>
+          <div class="word" id="w4">EVERY FINDING → A FIX.</div>
+          <div class="tagline" id="tagline"></div>
+          <div class="credits" id="credits"><span class="cmd">❯ flmp dashboard</span><span style="align-self:center">Made by <b style="color:#d6f3ec">plbct0</b> &amp; <b style="color:#5effc6">sauceyC4</b></span><span style="align-self:center" class="tag">AUTHORIZED SCOPE ONLY</span></div>
+        </div>
+      </div>
+
+      <div id="flash" class="clip" data-start="0" data-duration="49.27" data-track-index="7"></div>
+      <div id="black" class="clip" data-start="0" data-duration="49.27" data-track-index="8"></div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const $ = (s) => document.querySelector(s);
+      const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+      const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      function rng(seed) { return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
+      const R = rng(1337);
+
+      // ---------- helpers ----------
+      function typeText(el, text, t0, dt) {
+        el.textContent = "";
+        const spans = [...text].map((c) => { const s = mk("span", "ch"); s.textContent = c; el.appendChild(s); return s; });
+        spans.forEach((s, i) => tl.set(s, { display: "inline" }, t0 + i * dt));
+        return t0 + spans.length * dt;
+      }
+      function revealKids(el, t0, dt) { [...el.children].forEach((c, i) => tl.set(c, { opacity: 1 }, t0 + i * dt)); return t0 + el.children.length * dt; }
+      function blink(el, from, to, p = 0.5) { for (let t = from; t < to - 0.01; t += p) { tl.set(el, { opacity: 1 }, t); tl.set(el, { opacity: 0 }, t + p / 2); } tl.set(el, { opacity: 1 }, to); }
+      function stackCounter(el, values, t0, dt) {
+        values.forEach((v) => { const b = mk("b"); b.textContent = v; el.appendChild(b); });
+        const kids = [...el.children];
+        kids.forEach((b, i) => { tl.set(b, { opacity: 1 }, t0 + i * dt); if (i < kids.length - 1) tl.set(b, { opacity: 0 }, t0 + (i + 1) * dt); });
+      }
+      const cursor = $("#cursor"), ripple = $("#ripple");
+      function moveTo(x, y, t, d = 0.45) { tl.to(cursor, { x: x - 3, y: y - 2, duration: d, ease: "power2.inOut" }, t); }
+      // ripple uses explicit coordinates (cursor positions are known up-front)
+      function clickAt(x, y, t, target) {
+        tl.set(ripple, { left: x - 22, top: y - 22, opacity: 1, scale: 0.2 }, t);
+        tl.to(ripple, { scale: 1.6, opacity: 0, duration: 0.45, ease: "power2.out" }, t);
+        tl.to(cursor, { scale: 0.85, duration: 0.06 }, t); tl.to(cursor, { scale: 1, duration: 0.1 }, t + 0.06);
+        if (target) { tl.to(target, { scale: 0.97, duration: 0.07 }, t); tl.to(target, { scale: 1, duration: 0.12 }, t + 0.07); }
+      }
+
+      // ================= BACKGROUND =================
+      tl.to("#bg", { opacity: 1, duration: 1.4, ease: "power1.out" }, 0.1);
+      tl.to("#grid", { y: -920, duration: 49.27, ease: "none" }, 0);
+      const hex = "0123456789ABCDEF";
+      const rainbox = $("#rainbox");
+      for (let c = 0; c < 33; c++) {
+        const col = mk("div", "rain"); col.setAttribute("data-layout-allow-occlusion", "");
+        col.style.left = (20 + c * 57 + Math.floor(R() * 20)) + "px";
+        let s = "";
+        for (let r = 0; r < 140; r++) s += (R() < 0.25 ? "" : hex[Math.floor(R() * 16)] + hex[Math.floor(R() * 16)]) + "\n";
+        col.textContent = s;
+        rainbox.appendChild(col);
+        tl.to(col, { y: 900 + R() * 1100, duration: 49.27, ease: "none" }, 0);
+      }
+      const beats = [12.745,13.505,14.265,15.045,15.805,16.575,17.345,18.115,18.885,19.655,20.425,21.195,21.965,22.735,23.505,24.275,25.045,25.815,26.585,27.355,28.115,28.895,29.655,30.425,31.195,31.965,32.735,33.505,34.275,35.045,35.815,36.595];
+      beats.forEach((b) => { tl.to("#pulse", { opacity: 0.55, duration: 0.05 }, b); tl.to("#pulse", { opacity: 0, duration: 0.55, ease: "power2.out" }, b + 0.05); });
+
+      // ================= SCENE 1 · TERMINAL =================
+      const archLines = [
+        "                  -`",
+        "                 .o+`",
+        "                `ooo/",
+        "               `+oooo:",
+        "              `+oooooo:",
+        "              -+oooooo+:",
+        "            `/:-:++oooo+:",
+        "           `/++++/+++++++:",
+        "          `/++++++++++++++:",
+        "         `/+++ooooooooooooo/`",
+        "        ./ooosssso++osssssso+`",
+        "       .oossssso-````/ossssss+`",
+        "      -osssssso.      :ssssssso.",
+        "     :osssssss/        osssso+++.",
+        "    /ossssssss/        +ssssooo/-",
+        "  `/ossssso+/:-        -:/+osssso+-",
+        " `+sso+:-`                 `.-/+oso:",
+        "`++:.                           `-/+/",
+        ".`                                 `/",
+      ];
+      const archEl = $("#archlogo");
+      archLines.forEach((l) => { const d = mk("div", "rv"); d.textContent = l; archEl.appendChild(d); });
+      const ffRows = [
+        ["", "os", "Arch Linux x86_64 (btw)"],
+        ["", "kernel", "WIN32_NT 10.0.26300.9711"],
+        ["\u{F0150}", "uptime", "4 hours, 1 min"],
+        ["", "shell", "PowerShell 7.6.9"],
+        ["", "wm", "Desktop Window Manager 10.0.26100.9549"],
+        ["", "term", "Windows Terminal 1.24.12741.0"],
+        ["", "font", "JetBrainsMonoNL Nerd Font (11pt)"],
+        ["", "cpu", "AMD Ryzen 5 3600XT (12) @ 4.63 GHz"],
+        ["\u{F08AE}", "gpu", "NVIDIA GeForce RTX 2060 @ 2.15 GHz (5.82 GiB) [Discrete]"],
+        ["", "ram", "11.20 GiB / 15.93 GiB (<span class=\"y\">70%</span>)"],
+        ["\u{F02CA}", "disk", "594.01 GiB / 830.43 GiB (<span class=\"y\">72%</span>) - NTFS"],
+        ["\u{F0379}", "display", "2560x1440 in 27\", 144 Hz [External]"],
+      ];
+      const rowsEl = $("#ffrows");
+      ffRows.forEach(([ic, k, v]) => { const d = mk("div", "r rv", `<span class="k">${ic ? ic + " " : "  "}${k}</span>${v}`); rowsEl.appendChild(d); });
+      const dotsEl = $("#ffdots");
+      ["#9399b2", "#bac2de", "#94e2d5", "#f5c2e7", "#89b4fa", "#f9e2af", "#a6e3a1", "#f38ba8"].forEach((c) => { const s = mk("span", "rv"); s.style.color = c; s.textContent = "●"; dotsEl.appendChild(s); });
+
+      tl.set("#term", { scale: 0.94 }, 0);
+      tl.to("#term", { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" }, 0.35);
+      tl.set("#psver", { opacity: 1 }, 1.0);
+      revealKids(archEl, 1.35, 0.075);
+      typeText($("#ffhd"), "disof@arch", 2.925, 0.035);
+      revealKids(rowsEl, 3.15, 0.115);
+      revealKids(dotsEl, 4.65, 0.05);
+      typeText($("#loadline"), "Das Laden der persönlichen und Systemprofile dauerte 617 ms.", 5.25, 0.011);
+      tl.set("#prompt", { opacity: 1 }, 6.005);
+      blink($("#caret1"), 6.005, 6.775);
+      typeText($("#cmd1"), "flmp", 6.775, 0.15);
+      // Enter -> FLMP splash
+      tl.set("#pA", { opacity: 0 }, 7.545);
+      tl.set("#pB", { opacity: 1 }, 7.56);
+      const W = 58, pad = (str, n) => str + " ".repeat(Math.max(0, n - str.length));
+      const C = (cls, str) => `<span class="${cls}">${esc(str)}</span>`;
+      const row = (plain, html) => C("bl2", "║") + " " + html + " ".repeat(Math.max(0, W - 1 - plain.length)) + C("bl2", "║");
+      const logoRows = [["bu", "███████╗██╗     ███╗   ███╗██████╗ "], ["bl2", "██╔════╝██║     ████╗ ████║██╔══██╗"], ["bl2", "█████╗  ██║     ██╔████╔██║██████╔╝"],
+        ["gr", "██╔══╝  ██║     ██║╚██╔╝██║██╔═══╝ "], ["gr", "██║     ███████╗██║ ╚═╝ ██║██║     "], ["gr", "╚═╝     ╚══════╝╚═╝     ╚═╝╚═╝     "]];
+      const bannerHtml = [C("bl2", "╔" + "═".repeat(W) + "╗")];
+      logoRows.forEach(([cls, l]) => bannerHtml.push(row(" " + l, " " + C(cls, l))));
+      const sent = "SENTINEL // FiveM exposure & OSINT console · local mode";
+      bannerHtml.push(row(sent, C("mg", "SENTINEL") + " " + C("dm", "//") + " " + esc("FiveM exposure & OSINT console") + " " + C("dm", "· local mode")));
+      bannerHtml.push(C("bl2", "╚" + "═".repeat(W) + "╝"));
+      bannerHtml.push(C("dm", "  TCP connect · service detection · TLS/header checks · public OSINT"));
+      bannerHtml.push(C("dm", "  Made by plbct0 and ") + "<b class=\"dm\">sauceyC4</b>" + C("dm", " · authorized scope only"));
+      const bannerEl = $("#banner");
+      bannerHtml.forEach((h) => bannerEl.appendChild(mk("div", "rv", h)));
+      revealKids(bannerEl, 7.6, 0.055);
+      const artLines = [
+        "        .=#%%@%%%#=        .-%%%%#-.  ..", "       -*%%%@@@@@@%*.     :*%%@@@@%-  ..", "      =#%%%@@@@@@@%%*.  .+****@@@@@*...:",
+        "    .=*##%%%@@@@@%%%%=  -#*-==%@@@%%-.:+", "    -*#####%%%@@%%%@@*:  .+-=%%%@%@@+..*", "   .=*#%%##%%%%@%%@@@#*=  -*+%%**@@@*..+",
+        "   -=#%%%%%@@@@@%%@@#%*+=--#=*####@@#. =", "  :-=%%%%%%%%@@@%@@@##+=**%@*#-*#*%@#  +", ".:-.*%@#+=:::+*%@@@@%#==::+*=:=##%@@#. *",
+        "--:-%%@%.     -%@@@@@%*.  =+   -#@@@%: +", "**:*@%@@-    :%%###@@@%-  ++   *%#%@%- +", "**+%@@@@%-  .#*.  .%@@%*  +*: -#. -@@+ *",
+        "--*%@@@@@@*-+#.    *@@%%::**%=*-  :@@#:=", "=*%%@@@%%@@@#.     =@@@@*=**%@*   .@@%+.", "+#%%@@%*@@@%.:     :@@@@%+*+%@:    #@@* ",
+        "*%%%@%+%@@@=.=.     +@@@@%#+#*..   +@@%:", "**%%@*#@@%=::=:     :@@@%*#=*=.    -@@@*", "-#%%##@@#:..-=:.     *@@***+*=:     %@@%",
+        "-#%%%@@+.:::=-:.     :@@%%**: .     +@@@", "+%%%@@+    :...       +@%@%=  .     :@@@",
+      ];
+      const artEl = $("#art");
+      artLines.forEach((l) => { const d = mk("div", "rv"); d.textContent = l; artEl.appendChild(d); });
+      revealKids(artEl, 8.3, 0.034);
+      tl.set("#prog", { opacity: 1 }, 9.075);
+      tl.to("#pbarfill", { scaleX: 1, duration: 1.4, ease: "steps(10)" }, 9.075);
+      stackCounter($("#pct"), ["0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"], 9.075, 0.14);
+      // clear -> menu
+      tl.set("#pB", { opacity: 0 }, 10.625);
+      tl.set("#pC", { opacity: 1 }, 10.635);
+      const menuHtml = [];
+      menuHtml.push(C("bl2", "╔" + "═".repeat(W) + "╗"));
+      menuHtml.push(C("bl2", "║") + " " + C("mg", "MAIN MENU") + " ".repeat(W - 1 - 9 - 11) + C("dm", "Nmap: ") + C("gr", "ready") + C("bl2", "║"));
+      const groups = [["SERVER SECURITY", [["1", "Quick scan", "common FiveM / web TCP ports"], ["2", "Custom ports", "list or range, max. 1024"], ["3", "Config audit", "local server.cfg baseline"], ["4", "Dashboard", "hacker-style browser UI (local)"]]],
+        ["NETWORK OSINT", [["5", "Email DNS", "MX / SPF / DMARC policy"], ["6", "IP intel", "RDAP / reverse DNS / geo"], ["8", "Domain intel", "DNS / RDAP / CT subdomains"]]],
+        ["LOCAL METADATA", [["7", "Discord ID", "Snowflake / profile metadata"], ["9", "Username", "Discord handle format"], ["10", "Phone", "offline numbering plan"], ["11", "Display name", "Discord display-name format"]]]];
+      groups.forEach(([label, items]) => {
+        menuHtml.push(C("bl2", "╟" + "─".repeat(W) + "╢"));
+        menuHtml.push(row("▸ " + label, C("bu", "▸ " + label)));
+        items.forEach(([k, n, d]) => { const key = "[" + k.padStart(2) + "]"; menuHtml.push(row(key + " " + pad(n, 13) + d, C("bl2", key) + " " + C("gr", pad(n, 13)) + C("dm", d))); });
+      });
+      menuHtml.push(C("bl2", "╟" + "─".repeat(W) + "╢"));
+      menuHtml.push(row("[ 0] Exit", C("bl2", "[ 0]") + " " + C("yl", "Exit")));
+      menuHtml.push(C("bl2", "╚" + "═".repeat(W) + "╝"));
+      const menuEl = $("#menu");
+      menuHtml.forEach((h) => menuEl.appendChild(mk("div", "rv", h)));
+      revealKids(menuEl, 10.64, 0.022);
+      tl.set("#mprompt", { opacity: 1 }, 11.13);
+      blink($("#caret2"), 11.13, 11.395, 0.26);
+      typeText($("#cmd2"), "4", 11.395, 0.1);
+      tl.set("#caret2", { opacity: 0 }, 11.7);
+      const runEl = $("#runline");
+      runEl.innerHTML = "";
+      typeText(runEl, "flmp 3D dashboard is running locally: http://127.0.0.1:8765", 11.72, 0.006);
+      tl.set("#ctrlc", { opacity: 1 }, 12.0);
+      // camera push into the URL, then drop
+      tl.to("#term", { scale: 1.45, duration: 0.6, ease: "power3.in" }, 12.155);
+      tl.to("#flash", { opacity: 1, duration: 0.06 }, 12.70);
+      tl.to("#flash", { opacity: 0, duration: 0.55, ease: "power2.out" }, 12.80);
+      tl.set("#term", { opacity: 0 }, 12.76);
+
+      // ================= SCENE 2 · DASHBOARD =================
+      tl.set("#browser", { scale: 1.12 }, 0);
+      tl.set("#browser", { opacity: 1 }, 12.745);
+      tl.to("#browser", { scale: 1, duration: 0.8, ease: "expo.out" }, 12.745);
+      typeText($("#heroword"), "exposure.", 13.6, 0.06);
+      document.querySelectorAll("#v-dash .stat").forEach((s, i) => { tl.set(s, { y: 18 }, 0); tl.to(s, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 13.505 + i * 0.19); });
+      const tools = [["◈", "Server Scan", "Open ports, exposed services & web exposure on an authorized host — each with a fix."],
+        ["⬡", "Domain Intel", "A/AAAA/MX/NS/TXT/CAA/SOA plus RDAP registrar & lifecycle dates."],
+        ["⌖", "CT Subdomains", "Host names seen in public Certificate Transparency logs (crt.sh)."],
+        ["◉", "IP Info", "RDAP network, reverse DNS and optional approximate geolocation & ASN."],
+        ["✉", "Email DNS Policy", "MX, SPF and DMARC posture for a domain. No mailbox or owner lookup."],
+        ["❖", "Discord Snowflake", "Decode account-creation time & ID metadata locally. No identity lookup."],
+        ["☎", "Phone Metadata", "Offline numbering-plan parsing: region, type, validity."],
+        ["@", "Username Format", "Local Discord handle format check. No account search."]];
+      const toolsEl = $("#tools");
+      tools.forEach(([ic, h, p], i) => {
+        const t = mk("div", "tool rv", `<div class="ic">${ic}</div><span class="go">→</span><h4>${esc(h)}</h4><p>${esc(p)}</p>`);
+        t.style.left = (26 + (i % 4) * 357) + "px"; t.style.top = (346 + Math.floor(i / 4) * 130) + "px";
+        toolsEl.appendChild(t);
+        tl.set(t, { y: 16 }, 0);
+        tl.to(t, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 15.045 + i * 0.095);
+      });
+      document.querySelectorAll("#v-dash .rec").forEach((r, i) => tl.to(r, { opacity: 1, duration: 0.25 }, 16.2 + i * 0.12));
+
+      // cursor -> IP Info
+      tl.set(cursor, { x: 900, y: 520 }, 0);
+      tl.to(cursor, { opacity: 1, duration: 0.2 }, 16.575);
+      moveTo(125, 242, 16.9, 1.0);
+      clickAt(125, 242, 18.115);
+      tl.to("#navHL", { y: 120, duration: 0.25, ease: "power2.out" }, 18.115);
+      tl.set("#v-dash", { opacity: 0 }, 18.15); tl.set("#t-dash", { opacity: 0 }, 18.15);
+      tl.set("#v-ip", { opacity: 1, y: 10 }, 18.15); tl.to("#v-ip", { y: 0, duration: 0.3, ease: "power2.out" }, 18.15); tl.set("#t-ip", { opacity: 1 }, 18.15);
+      // type IP (content coords: main x+250, view y+60)
+      moveTo(520, 196, 18.4, 0.45);
+      clickAt(520, 196, 18.885);
+      tl.set("#ipinp", { borderColor: "#39d6ff" }, 18.885);
+      typeText($("#iptxt"), "203.0.113.42", 19.05, 0.085);
+      blink($("#caret3"), 18.9, 20.1, 0.4);
+      tl.set("#caret3", { opacity: 0 }, 20.1);
+      moveTo(305, 242, 20.05, 0.33);
+      clickAt(305, 242, 20.425);
+      tl.set("#geochk", { opacity: 1 }, 20.43);
+      moveTo(985, 295, 20.6, 0.5);
+      clickAt(985, 295, 21.195, "#ipbtn");
+      tl.set("#ipres", { opacity: 1, y: 14 }, 21.25); tl.to("#ipres", { y: 0, duration: 0.3 }, 21.25);
+      tl.set("#ipsum1", { opacity: 0 }, 21.965); tl.set("#ipsum2", { opacity: 1 }, 21.965); tl.set("#ipsrc", { opacity: 1 }, 21.965);
+      tl.to(cursor, { x: 1300, y: 640, duration: 0.6, ease: "power2.inOut" }, 21.4);
+
+      // ---------- IP relationship tree ----------
+      const SVGNS = "http://www.w3.org/2000/svg";
+      const sv = (n, a) => { const e = document.createElementNS(SVGNS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+      function tree(host, w, h, root, kids, t0, opts = {}) {
+        const svg = sv("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}` });
+        const linkG = sv("g", {}), nodeG = sv("g", {}); svg.append(linkG, nodeG);
+        const rx = opts.rx || 330, cx = opts.cx || 860, top = opts.top || 30, step = opts.step || ((h - 2 * top) / Math.max(1, kids.length - 1));
+        const ry = top + (step * (kids.length - 1)) / 2;
+        const nodes = [];
+        const addNode = (x, y, label, value, isRoot, t) => {
+          const c = sv("circle", { class: "nd" + (isRoot ? " root" : ""), cx: x, cy: y, r: isRoot ? 8 : 6 });
+          const l = sv("text", { class: "gl" + (isRoot ? " root" : ""), x: x - 16, y: value ? y - 3 : y + 5, "text-anchor": "end" }); l.textContent = label;
+          nodeG.append(c, l); tl.to([c, l], { opacity: 1, duration: 0.2 }, t);
+          let v = null;
+          if (value) { v = sv("text", { class: "gv", x: x - 16, y: y + 14, "text-anchor": "end" }); v.textContent = value; nodeG.append(v); tl.to(v, { opacity: 1, duration: 0.25 }, t + 0.05); }
+          return { c, l, v, x, y };
+        };
+        nodes.push(addNode(rx, ry, root[0], root[1], true, t0));
+        kids.forEach((k, i) => {
+          const y = top + i * step, dx = (cx - rx) * 0.5;
+          const p = sv("path", { class: "lk", d: `M ${rx} ${ry} C ${rx + dx} ${ry}, ${cx - dx} ${y}, ${cx} ${y}`, pathLength: "1" });
+          linkG.appendChild(p);
+          const tt = t0 + 0.08 + i * (opts.gap || 0.1);
+          tl.to(p, { strokeDashoffset: 0, duration: 0.45, ease: "power2.out" }, tt);
+          nodes.push(addNode(cx, y, k[0], k[1], false, tt + 0.32));
+        });
+        host.appendChild(svg);
+        return nodes;
+      }
+      const ipKids = [["NETWORK", "DEMO-HOSTING-NET-01"], ["RANGE", "203.0.113.0 – 203.0.113.255"], ["COUNTRY", "DE"], ["REVERSE DNS", "srv-42.demo-hosting.example"],
+        ["ASN / ISP", "64500 · Demo Hosting GmbH"], ["LOCATION", "Frankfurt am Main, Hessen, DE"], ["COORDINATES", "50.1109, 8.6821"]];
+      const ipNodes = tree($("#ipgraph"), 1376, 322, ["IP", "203.0.113.42"], ipKids, 22.0, { rx: 380, cx: 940, top: 34, step: 42.3 });
+      // radar HUD
+      const radar = mk("div", "radar", `<div class="rg" style="inset:0"></div><div class="rg" style="inset:38px"></div><div class="rg" style="inset:76px"></div><div class="rg" style="left:114px;top:0;width:1px;height:230px;border-radius:0;border-width:0 0 0 1px"></div><div class="rg" style="left:0;top:114px;width:230px;height:1px;border-radius:0;border-width:1px 0 0 0"></div><div class="sw" id="sweep"></div><div class="bp" style="left:150px;top:62px"></div><div class="bp" style="left:70px;top:150px;opacity:.6"></div><div class="lab">GEO · ASN · RDAP</div>`);
+      radar.style.left = "1105px"; radar.style.top = "38px";
+      $("#ipgraph").appendChild(radar);
+      tl.to(radar, { opacity: 1, duration: 0.3 }, 22.2);
+      tl.to("#sweep", { rotation: 1080, duration: 3.2, ease: "none" }, 22.2);
+      // camera zoom on the graph, click ASN node
+      tl.to("#cam2", { scale: 1.26, duration: 0.75, ease: "power2.inOut" }, 22.735);
+      const asn = ipNodes[5]; // graph origin in content coords: (250+26+20, 60+310+156) = (296, 526)
+      const ax = 296 + asn.x - 60, ay = 526 + asn.y - 3;
+      moveTo(ax, ay, 22.9, 0.5);
+      clickAt(ax, ay, 23.505);
+      tl.set("#pop", { left: 296 + asn.x + 22, top: ay - 46, opacity: 1, scale: 0.9 }, 23.56);
+      tl.to("#pop", { scale: 1, duration: 0.18, ease: "back.out(2)" }, 23.56);
+      tl.to("#cam2", { scale: 1, duration: 0.6, ease: "power2.inOut" }, 24.0);
+      tl.set("#pop", { opacity: 0 }, 24.3);
+
+      // ---------- server scan ----------
+      moveTo(125, 162, 24.3, 0.6);
+      clickAt(125, 162, 25.045);
+      tl.to("#navHL", { y: 40, duration: 0.25, ease: "power2.out" }, 25.045);
+      tl.set("#v-ip", { opacity: 0 }, 25.08); tl.set("#t-ip", { opacity: 0 }, 25.08);
+      tl.set("#v-scan", { opacity: 1, y: 10 }, 25.08); tl.to("#v-scan", { y: 0, duration: 0.3 }, 25.08); tl.set("#t-scan", { opacity: 1 }, 25.08);
+      moveTo(520, 196, 25.15, 0.35);
+      clickAt(520, 196, 25.55);
+      typeText($("#sciptxt"), "203.0.113.42", 25.65, 0.07);
+      moveTo(305, 326, 26.55, 0.35);
+      clickAt(305, 326, 26.95);
+      tl.set("#authchk", { opacity: 1 }, 26.96);
+      moveTo(726, 371, 27.0, 0.3);
+      clickAt(726, 371, 27.355, "#scanbtn");
+      tl.set("#scanres", { opacity: 1, y: 14 }, 27.4); tl.to("#scanres", { y: 0, duration: 0.3 }, 27.4);
+      tl.set("#nmapline", { opacity: 1 }, 27.42);
+      tl.to("#nfill", { scaleX: 1, duration: 2.2, ease: "steps(24)" }, 27.42);
+      stackCounter($("#npct"), ["0%", "8%", "17%", "29%", "41%", "52%", "63%", "71%", "84%", "92%", "100%"], 27.42, 0.21);
+      tl.to(cursor, { opacity: 0, duration: 0.3 }, 27.7);
+      tl.set("#nmapline", { opacity: 0 }, 29.65);
+      tl.set("#scsum1", { opacity: 0 }, 29.655); tl.set("#scsum2", { opacity: 1 }, 29.655);
+      const ports = [["22", "tcp", "open", "ssh OpenSSH 9.6p1"], ["80", "tcp", "open", "http nginx 1.24.0"], ["443", "tcp", "open", "https nginx 1.24.0 · ssl-cert: CN=demo-hosting.example"],
+        ["3306", "tcp", "open", "mysql MySQL 8.0.36"], ["6379", "tcp", "filtered", "redis"], ["30120", "tcp", "open", "http FXServer (FiveM)"], ["40120", "tcp", "open", "http txAdmin · http-title: txAdmin"]];
+      const tbl = $("#ports");
+      tbl.innerHTML = `<tr class="rv"><th style="width:110px">PORT</th><th style="width:100px">PROTO</th><th style="width:170px">STATE</th><th>SERVICE / VERSION</th></tr>`;
+      ports.forEach(([p, pr, st, sv2]) => { const tr = mk("tr", "rv"); tr.innerHTML = `<td>${p}</td><td>${pr}</td><td class="${st === "open" ? "op" : "fi"}">${st}</td><td>${esc(sv2)}</td>`; tbl.appendChild(tr); });
+      tbl.querySelectorAll("tr").forEach((tr, i) => tl.set(tr, { opacity: 1 }, 29.655 + i * 0.1));
+      document.querySelectorAll(".rp").forEach((r, i) => { tl.set(r, { scale: 0.6 }, 0); tl.to(r, { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2.4)" }, 30.425 + i * 0.09); });
+      const finds = [["H", "[HIGH] Sensitive service exposed on TCP/40120 (txAdmin web panel)", "Internet-exposed admin panels are a common break-in path.", "Bind txAdmin to localhost and reach it via VPN / SSH tunnel, or firewall it to admin IPs. Enable 2FA."],
+        ["H", "[HIGH] txAdmin panel served over plain HTTP", "Credentials and session cookies could be read on the network path.", "Put the panel behind an HTTPS reverse proxy — better, keep it off the public internet."],
+        ["H", "[HIGH] Sensitive service exposed on TCP/3306 (MySQL/MariaDB database)", "A database should never be reachable from the internet.", "Bind MySQL to 127.0.0.1 or allow only the app server's IP via firewall."],
+        ["R", "[REVIEW] Sensitive service exposed on TCP/22 (SSH)", "Port 22 is reachable from this scan location.", "Allow SSH only from admin IPs, use key auth, set PermitRootLogin no."],
+        ["R", "[REVIEW] Service banner on TCP/80: nginx 1.24.0", "An exposed version lets attackers look up known CVEs.", "Update nginx to a supported release and set server_tokens off;"]];
+      const fEl = $("#finds");
+      finds.forEach(([lv, t, d, f], i) => {
+        const c = mk("div", "fd " + lv, `<div class="t">${esc(t)}</div><div class="d">${esc(d)}</div><div class="f"><b>FIX ▸ </b>${esc(f)}</div>`);
+        c.style.top = (466 + i * 96) + "px"; fEl.appendChild(c);
+        tl.set(c, { x: -30 }, 0);
+        tl.to(c, { opacity: 1, x: 0, duration: 0.3, ease: "power2.out" }, 31.6 + i * 0.36);
+      });
+      tl.to("#scanInner", { y: -490, duration: 0.9, ease: "power2.inOut" }, 31.195);
+
+      // ---------- module montage ----------
+      tl.to("#dim", { opacity: 0.78, duration: 0.3 }, 33.45);
+      tl.to("#browser", { scale: 0.96, duration: 3.2, ease: "none" }, 33.45);
+      const cardDefs = [
+        ["DOMAIN INTEL", "demo-hosting.example", [["A", "203.0.113.42"], ["MX", "10 mail.demo-hosting.example"], ["NS", "ns1.demo-hosting.example"], ["RDAP", "Example Registrar · exp 2027-03-14"], ["CT SUBDOMAINS", "7 hosts · www, mail, panel, api …"]]],
+        ["EMAIL DNS POLICY", "ops@demo-hosting.example", [["DOMAIN", "demo-hosting.example"], ["MX", "10 mail.demo-hosting.example"], ["SPF", "published"], ["DMARC", "published"]]],
+        ["DISCORD SNOWFLAKE", "175928847299117063", [["CREATED UTC", "2016-04-30T11:18:25Z"], ["AGE · DAYS", "3840"], ["SNOWFLAKE", "worker 1 · proc 0 · inc 7"], ["IDENTITY", "not looked up — by design"]]],
+        ["PHONE METADATA", "+49 1512 3456789", [["E.164", "+4915123456789"], ["REGION", "DE"], ["TYPE", "mobile"], ["PLAN MATCH", "true · offline only"]]],
+      ];
+      const cardPos = [[130, 120], [1030, 120], [130, 570], [1030, 570]];
+      const cardTimes = [33.505, 34.275, 35.045, 35.815];
+      const cardsEl = $("#cards");
+      cardDefs.forEach(([title, root, kids], i) => {
+        const c = mk("div", "card", `<div class="ph"><span>${esc(title)}</span><span class="tag">PUBLIC / LOCAL</span></div>`);
+        c.style.left = cardPos[i][0] + "px"; c.style.top = cardPos[i][1] + "px";
+        const g = mk("div", "graph"); g.style.left = "16px"; g.style.top = "66px"; g.style.width = "726px"; g.style.height = "318px"; g.style.border = "0";
+        c.appendChild(g); cardsEl.appendChild(c);
+        const t = cardTimes[i];
+        tl.set(c, { scale: 0.85, y: 20 }, 0);
+        tl.to(c, { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: "back.out(1.6)" }, t);
+        tree(g, 726, 318, ["", root], kids, t + 0.08, { rx: 250, cx: 690, top: 40, step: (318 - 80) / Math.max(1, kids.length - 1), gap: 0.07 });
+      });
+      tl.to("#cards .card", { scale: 0.9, opacity: 0, duration: 0.5, ease: "power2.in", stagger: 0.05 }, 36.6);
+      tl.to("#browser", { opacity: 0, duration: 0.5 }, 36.9);
+      [["#g1", 37.1, -60], ["#g2", 37.2, 80], ["#g3", 37.3, -120]].forEach(([g, t, x]) => { tl.set(g, { opacity: 0.85, x }, t); tl.set(g, { opacity: 0 }, t + 0.08); });
+      tl.to("#flash", { opacity: 0.85, duration: 0.05 }, 37.5);
+      tl.to("#flash", { opacity: 0, duration: 0.6, ease: "power2.out" }, 37.56);
+
+      // ================= SCENE 3 · OUTRO =================
+      const big = [["#74c7ec", "███████╗██╗     ███╗   ███╗██████╗ "], ["#39d6ff", "██╔════╝██║     ████╗ ████║██╔══██╗"], ["#39d6ff", "█████╗  ██║     ██╔████╔██║██████╔╝"],
+        ["#5effc6", "██╔══╝  ██║     ██║╚██╔╝██║██╔═══╝ "], ["#5effc6", "██║     ███████╗██║ ╚═╝ ██║██║     "], ["#5effc6", "╚═╝     ╚══════╝╚═╝     ╚═╝╚═╝     "]];
+      const bigEl = $("#biglogo");
+      big.forEach(([col, l], i) => {
+        const d = mk("div"); d.textContent = l; d.style.color = col; d.style.textShadow = `0 0 26px ${col}88`; bigEl.appendChild(d);
+        const t = 37.535 + i * 0.07, jx = (i % 2 ? 1 : -1) * (30 + i * 8);
+        tl.set(d, { opacity: 1, x: jx }, t); tl.set(d, { x: -jx / 3 }, t + 0.05); tl.to(d, { x: 0, duration: 0.12 }, t + 0.1);
+      });
+      tl.to("#biglogo", { scale: 1.04, duration: 0.12, yoyo: true, repeat: 1 }, 38.315);
+      const subEl = $("#subline");
+      subEl.innerHTML = "";
+      const subA = mk("span"); subA.style.color = "#f5a8ff"; subEl.appendChild(subA);
+      const subB = mk("span"); subB.style.color = "#97b5b6"; subEl.appendChild(subB);
+      const e1 = typeText(subA, "SENTINEL", 39.845, 0.04);
+      typeText(subB, "  //  FiveM exposure & OSINT console", e1, 0.022);
+      const words = ["#w0", "#w1", "#w2", "#w3", "#w4"], wt = [40.625, 41.385, 42.165, 42.935, 43.705];
+      words.forEach((w, i) => {
+        tl.set(w, { opacity: 1, scale: 1.25, y: 0 }, wt[i]); tl.to(w, { scale: 1, duration: 0.25, ease: "expo.out" }, wt[i]);
+        if (i < words.length - 1) tl.set(w, { opacity: 0 }, wt[i + 1]); else tl.to(w, { opacity: 0, y: -16, duration: 0.3 }, 44.35);
+      });
+      const tg = $("#tagline"); const tgA = mk("span"); const tgB = mk("span"); tgB.style.color = "#5effc6"; tg.append(tgA, tgB);
+      const e2 = typeText(tgA, "Map the attack surface. ", 44.475, 0.035);
+      typeText(tgB, "Find the holes.", e2, 0.035);
+      revealKids($("#credits"), 46.005, 0.25);
+      tl.to("#black", { opacity: 1, duration: 1.6, ease: "power1.in" }, 47.6);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
