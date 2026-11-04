@@ -136,6 +136,16 @@
     .glabel{fill:var(--text);font:600 12px "Cascadia Code",Consolas,monospace;opacity:0;animation:pop .4s ease forwards}
     .glabel.root{fill:var(--cyan);letter-spacing:.06em}
     .gvalue{fill:#8fb7b2;font:11px "Cascadia Code",Consolas,monospace;opacity:0;animation:pop .45s ease forwards}
+    .gnode{cursor:grab}.gnode:active{cursor:grabbing}.gnode text{user-select:none}
+    .gnode:hover .gcircle{stroke:var(--cyan);filter:drop-shadow(0 0 7px #39d6ffcc)}
+    .gpop{position:absolute;z-index:12;max-width:270px;background:#07171a;border:1px solid var(--line2);box-shadow:0 12px 32px #000b,0 0 18px #35ffd51a;padding:12px 13px;font-size:12px;color:var(--text)}
+    .gpop h5{margin:0 0 7px;color:var(--mint);font-size:11px;letter-spacing:.1em;padding-right:16px}
+    .gpop .v{color:#c6e6de;word-break:break-word;line-height:1.5}
+    .gpop ul{margin:7px 0 0;padding-left:16px;color:#9fc0be;max-height:160px;overflow:auto}
+    .gpop li{margin:2px 0;word-break:break-word}
+    .gpop .x{position:absolute;right:9px;top:7px;color:var(--muted);cursor:pointer;font-size:13px}.gpop .x:hover{color:var(--red)}
+    .gpop .hint{margin-top:9px;color:var(--muted2);font-size:10px}
+    .graph-hint{color:var(--muted2);font-size:10.5px;margin-top:8px;letter-spacing:.04em}
     .report-actions{display:flex;justify-content:flex-end;margin:12px 0}
     .secondary-button{border:1px solid #256462;background:#071114;color:var(--mint);padding:8px 12px;font:inherit;font-size:11px;letter-spacing:.08em;cursor:pointer}
     .secondary-button:hover{border-color:var(--cyan);color:var(--cyan)}.secondary-button:disabled{opacity:.4;cursor:not-allowed}
@@ -278,6 +288,7 @@
           <div class="source-tags" id="sourcetags"></div>
           <div class="report-title">RELATIONSHIP VIEW · PUBLIC ATTRIBUTES ONLY</div>
           <div class="graph" id="artifactgraph" aria-live="polite"></div>
+          <div class="graph-hint">↔ Drag any node to rearrange · click a node for full details · ⟳ reset layout with a new lookup</div>
           <div class="resources" id="emailresources"><p>Manual follow-up directory. FLMP does not send this address to external tools.</p><a href="https://mail.osintframework.com/" target="_blank" rel="noopener noreferrer">OPEN MAIL OSINT FRAMEWORK ↗</a></div>
           <div class="resources" id="discordresources"><p>Discord account-owner resources. These do not reveal another user's private details.</p><a href="https://support.discord.com/hc/en-us/articles/12620128861463-New-Usernames-and-Display-Names" target="_blank" rel="noopener noreferrer">USERNAME &amp; DISPLAY NAME RULES ↗</a><a href="https://support.discord.com/hc/en-us/articles/360004957991-Your-Discord-Data-Package" target="_blank" rel="noopener noreferrer">REQUEST YOUR OWN DATA PACKAGE ↗</a><a href="https://support.discord.com/hc/en-us/articles/360004109911-Data-Privacy-Controls" target="_blank" rel="noopener noreferrer">ACCOUNT PRIVACY CONTROLS ↗</a></div>
           <div class="report-actions"><button class="secondary-button" id="exportreport" type="button" disabled>↓ &nbsp; EXPORT JSON REPORT</button></div>
@@ -412,37 +423,78 @@ function short(v,n=36){v=String(v);return v.length>n?v.slice(0,n-1)+'…':v;}
 function tn(label,value,children){return {label,value:(value===null||value===undefined||value==='')?null:value,children:children||[]};}
 function buildTree(type,query,res){const kids=[];
   const push=(l,v,c)=>{if((v!==null&&v!==undefined&&v!=='')||(c&&c.length))kids.push(tn(l,v,c));};
-  const list=(arr,limit=6)=>arr.slice(0,limit).map(x=>tn(short(x,40)));
+  const leaves=(arr,limit=6)=>arr.slice(0,limit).map(x=>tn(String(x)));
   if(type==='email'){push('DOMAIN',res.domain);const mx=(res.mx_records||[]).map(m=>`${m.priority} ${m.host}`);
-    if(mx.length)push('MX',mx.length+' record(s)',list(mx));push('SPF',res.mail_dns_policy?.spf?.status);push('DMARC',res.mail_dns_policy?.dmarc?.status);push('STATUS',res.status);}
+    if(mx.length)push('MX',mx.length+' record(s)',leaves(mx));push('SPF',res.mail_dns_policy?.spf?.status);push('DMARC',res.mail_dns_policy?.dmarc?.status);push('STATUS',res.status);}
   else if(type==='domain'){const rec=res.dns_records||{};
     for(const k of ['A','AAAA','MX','NS','TXT','CAA','SOA']){const v=rec[k];
-      if(Array.isArray(v)&&v.length){const vals=v.map(i=>typeof i==='object'?`${i.priority} ${i.host||'(null MX)'}`:String(i));vals.length===1?push(k,short(vals[0],40)):push(k,vals.length+' records',list(vals));}}
-    const reg=res.registration||{};if(reg.status==='available')push('RDAP',reg.registrar||'registry',[tn('Registered',reg.registered),tn('Expires',reg.expires),tn('Status',short((reg.registry_status||[]).join(', '),40))].filter(n=>n.value));
-    const ct=res.certificate_transparency;if(ct&&ct.status==='available')push('CT SUBDOMAINS',ct.unique_hostnames+' hosts',list(ct.hostnames||[],8));}
+      if(Array.isArray(v)&&v.length){const vals=v.map(i=>typeof i==='object'?`${i.priority} ${i.host||'(null MX)'}`:String(i));vals.length===1?push(k,vals[0]):push(k,vals.length+' records',leaves(vals));}}
+    const reg=res.registration||{};if(reg.status==='available')push('RDAP',reg.registrar||'registry',[tn('Registered',reg.registered),tn('Expires',reg.expires),tn('Status',(reg.registry_status||[]).join(', '))].filter(n=>n.value));
+    const ct=res.certificate_transparency;if(ct&&ct.status==='available')push('CT SUBDOMAINS',ct.unique_hostnames+' hosts',leaves(ct.hostnames||[],12));}
   else if(type==='ip'){const rdap=res.rdap||{};push('NETWORK',rdap.network_name||rdap.handle);
     if(rdap.start_address&&rdap.end_address)push('RANGE',`${rdap.start_address} – ${rdap.end_address}`);push('COUNTRY',rdap.country);
     const ptr=res.reverse_dns_ptr;push('REVERSE DNS',Array.isArray(ptr)?(ptr[0]||'none'):ptr);
-    const geo=res.geolocation||{};push('ASN / ISP',[geo.asn,geo.isp].filter(Boolean).join(' · ')||null);push('LOCATION',[geo.city,geo.region,geo.country].filter(Boolean).join(', ')||null);}
+    const geo=res.geolocation||{};push('ASN / ISP',[geo.asn,geo.isp].filter(Boolean).join(' · ')||null);push('LOCATION',[geo.city,geo.region,geo.country].filter(Boolean).join(', ')||null);
+    if(geo.latitude!=null)push('COORDINATES',`${geo.latitude}, ${geo.longitude}`);}
   else if(type==='phone'){push('E.164',res.e164_format);push('CALLING CODE','+'+res.country_calling_code);push('REGION',res.numbering_region);push('TYPE',res.number_type);push('PLAN MATCH',res.valid_numbering_plan_match);}
   else if(type==='username'){push('NORMALIZED',res.normalized_handle);push('FORMAT',res.format_status);push('LENGTH',res.length);push('AVAILABILITY','not checked');}
-  else if(type==='discord'){push('CREATED UTC',res.account_created_utc);push('AGE · DAYS',res.account_age_days);push('PROFILE',short(res.profile_url,40));
-    const s=res.snowflake_metadata||{};if(s.worker_id!==undefined)push('SNOWFLAKE',`worker ${s.worker_id} · proc ${s.process_id}`);}
+  else if(type==='discord'){push('CREATED UTC',res.account_created_utc);push('AGE · DAYS',res.account_age_days);push('PROFILE',res.profile_url);
+    const s=res.snowflake_metadata||{};if(s.worker_id!==undefined)push('SNOWFLAKE',`worker ${s.worker_id} · proc ${s.process_id} · inc ${s.increment}`);}
   if(!kids.length)kids.push(tn('RESULT','no public attributes'));
   return tn(type.toUpperCase(),query,kids);}
-function renderGraph(type,query,res){const host=$('#artifactgraph');host.replaceChildren();const root=buildTree(type,query,res);
+function renderGraph(type,query,res){
+  const host=$('#artifactgraph');host.replaceChildren();host.style.position='relative';
+  const root=buildTree(type,query,res);
   const ROW=40,COL=210,PADX=150,PADY=18;let leaf=0,maxD=0;
   (function assign(n,d){n.d=d;maxD=Math.max(maxD,d);if(n.children.length){n.children.forEach(c=>assign(c,d+1));n.y=(n.children[0].y+n.children[n.children.length-1].y)/2;}else{n.y=PADY+leaf*ROW+ROW/2;leaf++;}})(root,0);
-  const H=Math.max(PADY*2+leaf*ROW,120),W=PADX+maxD*COL+60,cx=n=>PADX+n.d*COL;
-  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,style:`max-width:100%;height:auto;min-width:${Math.min(W,880)}px`});
-  const links=svgEl('g',{}),nodes=svgEl('g',{});svg.append(links,nodes);let order=0;
-  (function walk(n){const x=cx(n),y=n.y;
-    for(const c of n.children){const x2=cx(c),y2=c.y,dx=(x2-x)*.5;const p=svgEl('path',{class:'glink',d:`M ${x} ${y} C ${x+dx} ${y}, ${x2-dx} ${y2}, ${x2} ${y2}`,pathLength:'1'});p.style.animationDelay=(order*20)+'ms';links.append(p);}
-    const circle=svgEl('circle',{class:'gcircle'+(n.d===0?' root':''),cx:x,cy:y,r:n.d===0?6:5});circle.style.animationDelay=(order*25)+'ms';nodes.append(circle);
-    const label=svgEl('text',{class:'glabel'+(n.d===0?' root':''),x:x-12,y:n.value?y-2:y+4,'text-anchor':'end'});label.textContent=n.label;label.style.animationDelay=(order*25)+'ms';nodes.append(label);
-    if(n.value){const val=svgEl('text',{class:'gvalue',x:x-12,y:y+11,'text-anchor':'end'});val.textContent=short(Array.isArray(n.value)?n.value.join(', '):n.value,38);val.style.animationDelay=(order*25)+'ms';nodes.append(val);}
-    order++;n.children.forEach(walk);})(root);
-  host.append(svg);}
+  const H=Math.max(PADY*2+leaf*ROW,120),W=PADX+maxD*COL+60;
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,style:`max-width:100%;height:auto;min-width:${Math.min(W,880)}px;touch-action:none`});
+  const linksG=svgEl('g',{}),nodesG=svgEl('g',{});svg.append(linksG,nodesG);
+  const links=[];let order=0;
+  (function walk(n,parent){
+    n.x=PADX+n.d*COL;
+    const g=svgEl('g',{class:'gnode'});
+    n._c=svgEl('circle',{class:'gcircle'+(n.d===0?' root':''),r:n.d===0?6:5});n._c.style.animationDelay=(order*25)+'ms';
+    n._l=svgEl('text',{class:'glabel'+(n.d===0?' root':''),'text-anchor':'end'});n._l.textContent=short(n.label,n.d===0?22:20);n._l.style.animationDelay=(order*25)+'ms';
+    n._v=n.value?svgEl('text',{class:'gvalue','text-anchor':'end'}):null;
+    if(n._v){n._v.textContent=short(Array.isArray(n.value)?n.value.join(', '):n.value,34);n._v.style.animationDelay=(order*25)+'ms';}
+    g.append(n._c,n._l);if(n._v)g.append(n._v);nodesG.append(g);n._g=g;
+    place(n);
+    if(parent){const path=svgEl('path',{class:'glink',pathLength:'1'});path.style.animationDelay=(order*20)+'ms';linksG.append(path);links.push({from:parent,to:n,path});}
+    g.addEventListener('pointerdown',e=>onDown(n,e));
+    order++;n.children.forEach(c=>walk(c,n));
+  })(root,null);
+  function place(n){const x=n.x,y=n.y;n._c.setAttribute('cx',x);n._c.setAttribute('cy',y);
+    n._l.setAttribute('x',x-12);n._l.setAttribute('y',n._v?y-2:y+4);if(n._v){n._v.setAttribute('x',x-12);n._v.setAttribute('y',y+11);}}
+  function drawLink(lk){const a=lk.from,b=lk.to,dx=(b.x-a.x)*.5;lk.path.setAttribute('d',`M ${a.x} ${a.y} C ${a.x+dx} ${a.y}, ${b.x-dx} ${b.y}, ${b.x} ${b.y}`);}
+  links.forEach(drawLink);
+  function toSvg(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const m=svg.getScreenCTM();return m?pt.matrixTransform(m.inverse()):{x:e.clientX,y:e.clientY};}
+  let drag=null;
+  function onDown(n,e){e.preventDefault();hideDetail();const p=toSvg(e);drag={n,ox:p.x-n.x,oy:p.y-n.y,moved:0};n._g.style.cursor='grabbing';
+    try{svg.setPointerCapture(e.pointerId);}catch(_){}window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);}
+  function onMove(e){if(!drag)return;const p=toSvg(e);drag.moved+=Math.abs(e.movementX||0)+Math.abs(e.movementY||0);
+    drag.n.x=p.x-drag.ox;drag.n.y=p.y-drag.oy;place(drag.n);for(const lk of links)if(lk.from===drag.n||lk.to===drag.n)drawLink(lk);}
+  function onUp(e){window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);if(!drag)return;
+    drag.n._g.style.cursor='grab';if(drag.moved<4)showDetail(drag.n,e);drag=null;}
+  const pop=document.createElement('div');pop.className='gpop';pop.style.display='none';host.append(pop);
+  let openNode=null;
+  function hideDetail(){pop.style.display='none';openNode=null;}
+  function showDetail(n,e){
+    if(openNode===n){hideDetail();return;}
+    openNode=n;pop.replaceChildren();
+    const x=document.createElement('div');x.className='x';x.textContent='✕';x.addEventListener('pointerdown',ev=>{ev.stopPropagation();hideDetail();});
+    const h=document.createElement('h5');h.textContent=n.label;
+    pop.append(x,h);
+    if(n.value!==null&&n.value!==undefined){const v=document.createElement('div');v.className='v';v.textContent=Array.isArray(n.value)?n.value.join(', '):String(n.value);pop.append(v);}
+    if(n.children&&n.children.length){const ul=document.createElement('ul');for(const c of n.children){const li=document.createElement('li');li.textContent=c.value?`${c.label}: ${c.value}`:c.label;ul.append(li);}pop.append(ul);}
+    const hint=document.createElement('div');hint.className='hint';hint.textContent=n.d===0?'Root · '+type.toUpperCase():(n.children.length?'Branch · '+n.children.length+' item(s)':'Leaf attribute');pop.append(hint);
+    const r=host.getBoundingClientRect();let left=(e.clientX-r.left)+12,top=(e.clientY-r.top)+10;
+    pop.style.display='block';left=Math.min(left,host.clientWidth-pop.offsetWidth-8);top=Math.min(top,host.clientHeight-pop.offsetHeight-8);
+    pop.style.left=Math.max(6,left)+'px';pop.style.top=Math.max(6,top)+'px';
+  }
+  svg.addEventListener('pointerdown',e=>{if(e.target===svg)hideDetail();});
+  host.append(svg);host.append(pop);
+}
 $('#osintform').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#osintbtn');$('#osintresults').style.display='block';
   $('#osinterr').textContent='';$('#osintjson').textContent='';$('#artifactgraph').replaceChildren();$('#sourcetags').replaceChildren();
   $('#emailresources').classList.remove('show');$('#discordresources').classList.remove('show');$('#exportreport').disabled=true;latestReport=null;
