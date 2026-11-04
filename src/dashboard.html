@@ -141,11 +141,16 @@
     .error{color:var(--red);white-space:pre-wrap;font-size:12px}
     .source-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
     .report-title{color:var(--muted);font-size:10px;letter-spacing:.12em;margin:18px 0 8px}
-    .graph{display:flex;align-items:stretch;justify-content:center;gap:9px;flex-wrap:wrap;padding:18px 10px;border:1px solid #17383d;background:radial-gradient(ellipse,#0b2528,#03090b 75%);min-height:82px}
-    .graph-node{display:grid;align-content:center;gap:4px;min-width:125px;max-width:260px;padding:10px 12px;border:1px solid #26736e;background:#071619;box-shadow:0 0 18px #35ffd51a;overflow-wrap:anywhere;animation:rise .4s both}
-    .graph-node strong{color:var(--mint);font-size:10px;letter-spacing:.12em}
-    .graph-node span{color:#c6e2dc;font-size:11px}
-    .graph-edge{align-self:center;color:var(--cyan);font-size:18px;text-shadow:0 0 10px var(--cyan)}
+    .graph{position:relative;overflow-x:auto;padding:12px 6px;border:1px solid #17383d;background:radial-gradient(ellipse at 18% 50%,#0b2528,#03090b 80%);min-height:130px}
+    .graph svg{display:block;margin:0 auto}
+    .glink{fill:none;stroke:#2f8079;stroke-width:1.3;opacity:.8;stroke-dasharray:1;stroke-dashoffset:1;animation:draw .7s ease forwards}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    .gcircle{fill:#06181b;stroke:var(--mint);stroke-width:1.6;filter:drop-shadow(0 0 4px #45ffd2aa);opacity:0;animation:pop .35s ease forwards}
+    .gcircle.root{stroke:var(--cyan);fill:#07222b;filter:drop-shadow(0 0 7px #39d6ffcc)}
+    @keyframes pop{from{opacity:0}to{opacity:1}}
+    .glabel{fill:var(--text);font:600 12px "Cascadia Code",Consolas,monospace;opacity:0;animation:pop .4s ease forwards}
+    .glabel.root{fill:var(--cyan);letter-spacing:.06em}
+    .gvalue{fill:#8fb7b2;font:11px "Cascadia Code",Consolas,monospace;opacity:0;animation:pop .45s ease forwards}
     .report-actions{display:flex;justify-content:flex-end;margin:12px 0}
     .secondary-button{border:1px solid #256462;background:#071114;color:var(--mint);padding:8px 12px;font:inherit;font-size:11px;letter-spacing:.08em;cursor:pointer}
     .secondary-button:hover{border-color:var(--cyan);color:var(--cyan)}
@@ -335,19 +340,62 @@ $('#scanform').addEventListener('submit',async e=>{e.preventDefault();
 });
 /* ---------- public lookup ---------- */
 let latestReport=null;
-function node(graph,label,value){if(value===null||value===undefined||value==='')return;const n=document.createElement('div');n.className='graph-node';
-  const t=document.createElement('strong');t.textContent=label;const c=document.createElement('span');c.textContent=Array.isArray(value)?value.join(', '):String(value);
-  n.append(t,c);if(graph.childElementCount){const e=document.createElement('span');e.className='graph-edge';e.setAttribute('aria-hidden','true');e.textContent='→';graph.append(e);}graph.append(n);}
-function renderGraph(type,query,res){const g=$('#artifactgraph');g.replaceChildren();node(g,type.toUpperCase(),query);
-  if(type==='email'){node(g,'DOMAIN',res.domain);const mx=(res.mx_records||[]).map(m=>`${m.priority} ${m.host}`);if(mx.length)node(g,'MX',mx);node(g,'SPF',res.mail_dns_policy?.spf?.status);node(g,'DMARC',res.mail_dns_policy?.dmarc?.status);}
-  else if(type==='domain'){const rec=res.dns_records||{};for(const k of ['A','AAAA','MX','NS','TXT','CAA','SOA']){const v=rec[k];if(Array.isArray(v)&&v.length)node(g,k,v.map(i=>typeof i==='object'?`${i.priority} ${i.host}`:i));}
-    const reg=res.registration||{};if(reg.status==='available'){node(g,'REGISTRAR',reg.registrar);node(g,'EXPIRES',reg.expires);}
-    const ct=res.certificate_transparency;if(ct&&ct.status==='available')node(g,'CT SUBDOMAINS',`${ct.unique_hostnames} hostnames`);}
-  else if(type==='ip'){const rdap=res.rdap||{};node(g,'NETWORK',rdap.network_name||rdap.handle);node(g,'REVERSE DNS',res.reverse_dns_ptr);const geo=res.geolocation||{};node(g,'ASN / ISP',[geo.asn,geo.isp].filter(Boolean).join(' · '));node(g,'LOCATION',[geo.city,geo.region,geo.country].filter(Boolean).join(', '));}
-  else if(type==='phone'){node(g,'E.164',res.e164_format);node(g,'CALLING CODE',res.country_calling_code);node(g,'REGION',res.numbering_region);node(g,'PLAN MATCH',res.valid_numbering_plan_match);}
-  else if(type==='username'){node(g,'NORMALIZED',res.normalized_handle);node(g,'FORMAT',res.format_status);node(g,'AVAILABILITY','Not checked');}
-  else if(type==='discord'){node(g,'CREATED UTC',res.account_created_utc);node(g,'AGE · DAYS',res.account_age_days);node(g,'PROFILE',res.profile_url);}
-  if(g.childElementCount===1)node(g,'RESULT','No additional public attributes returned');}
+const SVGNS="http://www.w3.org/2000/svg";
+function svgEl(name,attrs){const n=document.createElementNS(SVGNS,name);for(const k in attrs)n.setAttribute(k,attrs[k]);return n;}
+function short(v,n=36){v=String(v);return v.length>n?v.slice(0,n-1)+'…':v;}
+function tn(label,value,children){return {label,value:(value===null||value===undefined||value==='')?null:value,children:children||[]};}
+function buildTree(type,query,res){
+  const kids=[];
+  const push=(l,v,c)=>{if((v!==null&&v!==undefined&&v!=='')||(c&&c.length))kids.push(tn(l,v,c));};
+  const list=(arr,limit=6)=>arr.slice(0,limit).map(x=>tn(short(x,40)));
+  if(type==='email'){push('DOMAIN',res.domain);const mx=(res.mx_records||[]).map(m=>`${m.priority} ${m.host}`);
+    if(mx.length)push('MX',mx.length+' record(s)',list(mx));push('SPF',res.mail_dns_policy?.spf?.status);push('DMARC',res.mail_dns_policy?.dmarc?.status);push('STATUS',res.status);}
+  else if(type==='domain'){const rec=res.dns_records||{};
+    for(const k of ['A','AAAA','MX','NS','TXT','CAA','SOA']){const v=rec[k];
+      if(Array.isArray(v)&&v.length){const vals=v.map(i=>typeof i==='object'?`${i.priority} ${i.host||'(null MX)'}`:String(i));
+        vals.length===1?push(k,short(vals[0],40)):push(k,vals.length+' records',list(vals));}}
+    const reg=res.registration||{};if(reg.status==='available')push('RDAP',reg.registrar||'registry',
+      [tn('Registered',reg.registered),tn('Expires',reg.expires),tn('Status',short((reg.registry_status||[]).join(', '),40))].filter(n=>n.value));
+    const ct=res.certificate_transparency;if(ct&&ct.status==='available')push('CT SUBDOMAINS',ct.unique_hostnames+' hosts',list(ct.hostnames||[],8));}
+  else if(type==='ip'){const rdap=res.rdap||{};push('NETWORK',rdap.network_name||rdap.handle);
+    if(rdap.start_address&&rdap.end_address)push('RANGE',`${rdap.start_address} – ${rdap.end_address}`);push('COUNTRY',rdap.country);
+    const ptr=res.reverse_dns_ptr;push('REVERSE DNS',Array.isArray(ptr)?(ptr[0]||'none'):ptr);
+    const geo=res.geolocation||{};push('ASN / ISP',[geo.asn,geo.isp].filter(Boolean).join(' · ')||null);push('LOCATION',[geo.city,geo.region,geo.country].filter(Boolean).join(', ')||null);}
+  else if(type==='phone'){push('E.164',res.e164_format);push('CALLING CODE','+'+res.country_calling_code);push('REGION',res.numbering_region);push('TYPE',res.number_type);push('PLAN MATCH',res.valid_numbering_plan_match);}
+  else if(type==='username'){push('NORMALIZED',res.normalized_handle);push('FORMAT',res.format_status);push('LENGTH',res.length);push('AVAILABILITY','not checked');}
+  else if(type==='discord'){push('CREATED UTC',res.account_created_utc);push('AGE · DAYS',res.account_age_days);push('PROFILE',short(res.profile_url,40));
+    const s=res.snowflake_metadata||{};if(s.worker_id!==undefined)push('SNOWFLAKE',`worker ${s.worker_id} · proc ${s.process_id}`);}
+  if(!kids.length)kids.push(tn('RESULT','no public attributes'));
+  return tn(type.toUpperCase(),query,kids);
+}
+function renderGraph(type,query,res){
+  const host=$('#artifactgraph');host.replaceChildren();
+  const root=buildTree(type,query,res);
+  const ROW=40,COL=210,PADX=150,PADY=18;
+  let leaf=0,maxD=0;
+  (function assign(n,d){n.d=d;maxD=Math.max(maxD,d);
+    if(n.children.length){n.children.forEach(c=>assign(c,d+1));n.y=(n.children[0].y+n.children[n.children.length-1].y)/2;}
+    else{n.y=PADY+leaf*ROW+ROW/2;leaf++;}})(root,0);
+  const H=Math.max(PADY*2+leaf*ROW,120),W=PADX+maxD*COL+60;
+  const cx=n=>PADX+n.d*COL;
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:Math.min(W,Math.max(W,640)),height:H,style:`max-width:100%;height:auto;min-width:${Math.min(W,880)}px`});
+  const links=svgEl('g',{}),nodes=svgEl('g',{});svg.append(links,nodes);
+  let order=0;
+  (function walk(n){
+    const x=cx(n),y=n.y;
+    for(const c of n.children){const x2=cx(c),y2=c.y,dx=(x2-x)*.5;
+      const p=svgEl('path',{class:'glink',d:`M ${x} ${y} C ${x+dx} ${y}, ${x2-dx} ${y2}, ${x2} ${y2}`,pathLength:'1'});
+      p.style.animationDelay=(order*20)+'ms';links.append(p);}
+    const circle=svgEl('circle',{class:'gcircle'+(n.d===0?' root':''),cx:x,cy:y,r:n.d===0?6:5});
+    circle.style.animationDelay=(order*25)+'ms';nodes.append(circle);
+    const label=svgEl('text',{class:'glabel'+(n.d===0?' root':''),x:x-12,y:n.value?y-2:y+4,'text-anchor':'end'});
+    label.textContent=n.label;label.style.animationDelay=(order*25)+'ms';nodes.append(label);
+    if(n.value){const val=svgEl('text',{class:'gvalue',x:x-12,y:y+11,'text-anchor':'end'});
+      val.textContent=short(Array.isArray(n.value)?n.value.join(', '):n.value,38);val.style.animationDelay=(order*25)+'ms';nodes.append(val);}
+    order++;n.children.forEach(walk);
+  })(root);
+  host.append(svg);
+}
 $('#osintform').addEventListener('submit',async e=>{e.preventDefault();
   const btn=$('#osintbtn');$('#osintresults').classList.add('show');
   $('#osinterr').textContent='';$('#osintjson').textContent='';$('#artifactgraph').replaceChildren();$('#sourcetags').replaceChildren();
