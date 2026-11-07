@@ -33,16 +33,24 @@ struct SentinelApp: App {
 }
 
 struct RootView: View {
-    @State private var selection: AppTab = .lookup
+    @State private var selection: AppTab = .recon
     @State private var booted = false
+    @State private var tiktokQuery: String?
 
-    enum AppTab: Hashable { case lookup, reposts, about }
+    enum AppTab: Hashable { case recon, lookup, reposts, about }
 
     var body: some View {
         ZStack {
             TabView(selection: $selection) {
-                LookupView()
-                    .tabItem { Label("RECON", systemImage: "scope") }
+                ReconHubView { query in
+                    tiktokQuery = query
+                    selection = .lookup
+                }
+                .tabItem { Label("RECON", systemImage: "scope") }
+                .tag(AppTab.recon)
+
+                LookupView(incoming: $tiktokQuery)
+                    .tabItem { Label("TIKTOK", systemImage: "music.note") }
                     .tag(AppTab.lookup)
 
                 RepostView()

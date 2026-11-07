@@ -21,6 +21,12 @@ struct AboutView: View {
                             source("vm.tiktok.com", "Nur bei Kurzlinks: Die Weiterleitung wird aufgelöst, um Username/Video-ID zu lesen.")
                             source("Lokal", "Formatprüfung des Usernames und Zeitstempel aus der Video-ID – ohne Netzwerk.")
                             source("tiktok.com (Live-Ansicht)", "Nur im Repost-Remover: die normale TikTok-Website mit deiner eigenen Anmeldung.")
+                            source("cloudflare-dns.com / dns.google", "DNS über HTTPS für E-Mail-, Domain- und PTR-Abfragen (iOS hat keinen MX/TXT-Resolver). Diese Anbieter sehen den abgefragten Namen.")
+                            source("rdap.org", "Registry-Daten zu Domains und IP-Netzen. Inhaberkontakte werden nicht abgefragt.")
+                            source("crt.sh", "Nur bei Domain mit --ct: Subdomains aus Certificate-Transparency-Logs.")
+                            source("ipwho.is", "Nur bei IP mit --geo: ungefähre Geo-Lage. Die IP wird dorthin gesendet.")
+                            source("Ziel-Server", "Nur beim Server-Scan mit Bestätigung: TCP-Verbindungen und HTTP/TLS-Anfragen direkt an die angegebene IP.")
+                            source("Offline", "Telefonnummern (PhoneNumberKit), Discord-Snowflakes, Username-Formate und server.cfg-Audit – ohne Netzwerk.")
                         }
 
                         GlassCard(tint: Theme.violet) {

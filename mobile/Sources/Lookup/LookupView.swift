@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct LookupView: View {
+    /// Vom Recon-Hub übergebenes Ziel (z. B. „@name“); wird einmal ausgeführt und dann geleert.
+    @Binding var incoming: String?
     @State private var model = LookupViewModel()
     @State private var showEmbed = false
     @FocusState private var focused: Bool
@@ -47,6 +49,16 @@ struct LookupView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
+        .onAppear(perform: consumeIncoming)
+        .onChange(of: incoming) { consumeIncoming() }
+    }
+
+    private func consumeIncoming() {
+        guard let value = incoming else { return }
+        incoming = nil
+        guard !value.isEmpty else { return }
+        showEmbed = false
+        Task { await model.run(value) }
     }
 
     private var searchField: some View {

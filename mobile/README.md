@@ -4,13 +4,32 @@ Die iPhone-App zu **FLMP Sentinel**. Sie ist in SwiftUI geschrieben und braucht 
 
 | Tab | Funktion |
 | --- | --- |
-| **Lookup** | TikTok-Username, Profil-Link, Video-Link, Kurzlink (`vm.tiktok.com`) oder Video-ID eingeben. Die App prüft das Username-Format lokal und fragt über TikToks offizielle **oEmbed**-Schnittstelle ab, ob es ein öffentliches Profil gibt (Anzeigename, Link). Aus einer Video-ID liest sie lokal das Upload-Datum (wie der Discord-Snowflake-Decoder im Python-Tool). Das Ergebnis lässt sich als JSON-Bericht teilen. Eine offizielle Profil-Vorschau (`embed.js`) wird nur auf Tipp geladen. |
-| **Reposts** | Entfernt **deine eigenen** Reposts. Du meldest dich in einer eingebetteten tiktok.com-Ansicht selbst an. Die App liest dann den „Reposts“-Tab deines Profils und entfernt auf deinen Tipp jeweils **einen** Repost. Zwischen zwei Entfernungen liegt eine Pause von 6 Sekunden. |
-| **Info** | Datenquellen, Datenschutz und Links zu TikToks Regeln. |
+| **RECON** | Das ganze FLMP-Sentinel-Tool. Ein Zielfeld erkennt automatisch E-Mail, Domain, IP, Telefonnummer, Discord-ID oder @TikTok. Dazu gibt es Kacheln für jedes Modul (siehe unten). Jeder Bericht lässt sich als JSON exportieren. |
+| **TIKTOK** | TikTok-Username, Profil-Link, Video-Link, Kurzlink (`vm.tiktok.com`) oder Video-ID eingeben. Die App prüft das Username-Format lokal und fragt über TikToks offizielle **oEmbed**-Schnittstelle ab, ob es ein öffentliches Profil gibt (Anzeigename, Link). Aus einer Video-ID liest sie lokal das Upload-Datum (wie der Discord-Snowflake-Decoder im Python-Tool). Das Ergebnis lässt sich als JSON-Bericht teilen. Eine offizielle Profil-Vorschau (`embed.js`) wird nur auf Tipp geladen. |
+| **PURGE** | Entfernt **deine eigenen** Reposts. Du meldest dich in einer eingebetteten tiktok.com-Ansicht selbst an. Die App liest dann den „Reposts“-Tab deines Profils und entfernt auf deinen Tipp jeweils **einen** Repost. Zwischen zwei Entfernungen liegt eine Pause von 6 Sekunden. |
+| **SYS** | Datenquellen, Datenschutz und Links zu TikToks Regeln. |
+
+## Recon-Module (Port des Python-Tools)
+
+| Modul | Entspricht | Was passiert |
+| --- | --- | --- |
+| Email Intel | `flmp email` | MX-, SPF- und DMARC-Einträge der Domain. Ob das Postfach existiert, wird nicht geprüft. |
+| Domain Recon | `flmp domain [--ct]` | A, AAAA, MX, NS, TXT, CAA und SOA, dazu RDAP mit Registrar, Daten und Status. Optional Subdomains aus crt.sh. |
+| IP Trace | `flmp ip [--no-geo]` | RDAP-Netz, Reverse-DNS (PTR) und optional die ungefähre Geo-Lage über ipwho.is. Nur öffentliche IPs. |
+| Phone Intel | `flmp phone` | Offline-Nummernplan über PhoneNumberKit: Land, Typ, Formate. Kein Inhaber, kein Standort. |
+| Discord Decode | `flmp discord` / `username` / `display-name` | Erstellungsdatum und Bits aus dem Snowflake, außerdem Formatchecks für Username und Anzeigenamen, lokal. |
+| Server Scan | `flmp scan` | TCP-Connect-Check (max. 1024 Ports, 16 parallel), HTTP/TLS-Header, Zertifikatsablauf und Findings mit Fix-Hinweisen. **Nur mit Bestätigung, dass du das System prüfen darfst.** iOS hat kein Nmap, deshalb gibt es keine Versionserkennung und keine Nmap-Skripte. |
+| Config Audit | `flmp audit-config` | Prüft eine FiveM-`server.cfg` aus der Dateien-App lokal und nur lesend. Geheime Werte werden nie angezeigt. |
+
+Nicht übernommen wurden das Web-Dashboard (die App ersetzt es) und die Beziehungs-Grafik.
 
 ## Datenquellen (wie im Python-Tool, nur öffentlich)
 
-- `https://www.tiktok.com/oembed`: offizielle, öffentliche Schnittstelle. Es gibt kein Scraping, keine Follower-Zahlen und keine privaten Daten.
+- DNS über HTTPS (`cloudflare-dns.com`, als Fallback `dns.google`): iOS kann MX- oder TXT-Einträge nicht selbst abfragen. Diese Anbieter sehen den abgefragten Namen.
+- `rdap.org`, `crt.sh` (nur mit `--ct`) und `ipwho.is` (nur mit `--geo`), genau wie im Python-Tool.
+- Server-Scan: Verbindungen gehen direkt an die angegebene IP. Damit auch HTTP ohne TLS geprüft werden kann, erlaubt die App unverschlüsselte Verbindungen (`NSAllowsArbitraryLoads`).
+
+- TikTok `https://www.tiktok.com/oembed`: offizielle, öffentliche Schnittstelle. Es gibt kein Scraping, keine Follower-Zahlen und keine privaten Daten.
 - `vm.tiktok.com` / `tiktok.com/t/…`: Nur die Weiterleitung eines Kurzlinks wird aufgelöst.
 - Username-Format und Video-Zeitstempel werden **lokal** berechnet, ohne Netzwerk.
 - `tiktok.com` in der Live-Ansicht: nur im Repost-Remover, mit deiner eigenen Anmeldung.
