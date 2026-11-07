@@ -1,0 +1,7 @@
+# Von XcodeGen erzeugt – wird im CI neu gebaut
+*.xcodeproj/
+Info.plist
+build/
+Payload/
+*.ipa
+DerivedData/

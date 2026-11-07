@@ -1,0 +1,69 @@
+name: iOS IPA (Sentinel Mobile)
+
+on:
+  push:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/ios-ipa.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Unsignierte IPA bauen
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Xcode-Version anzeigen
+        run: xcodebuild -version
+
+      - name: XcodeGen installieren
+        run: brew install xcodegen
+
+      - name: Xcode-Projekt erzeugen
+        run: xcodegen generate
+
+      - name: App bauen (ohne Signatur)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project SentinelMobile.xcodeproj \
+            -scheme SentinelMobile \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | tee build.log | grep -E "error:|warning: .*Sentinel|BUILD (SUCCEEDED|FAILED)" || true
+          test -d build/Build/Products/Release-iphoneos/SentinelMobile.app
+
+      - name: Build-Log hochladen (bei Fehler)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: mobile/build.log
+
+      - name: IPA packen
+        run: |
+          rm -rf Payload SentinelMobile.ipa
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/SentinelMobile.app Payload/
+          zip -qry SentinelMobile.ipa Payload
+          ls -lh SentinelMobile.ipa
+
+      - name: IPA als Artifact hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: SentinelMobile-ipa
+          path: mobile/SentinelMobile.ipa
+          if-no-files-found: error
+          retention-days: 14
